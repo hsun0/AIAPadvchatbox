@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Cohere 聊天機器人</title>
+    <link rel="icon" href="../static/images/iconR.png" type="image/x-icon" />
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f2f2f2; }
+        #chat-window { width: 500px; height: 600px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin: 20px auto; background-color: #fff; }
+        #input-area { width: 500px; margin: 10px auto; display: flex; }
+        #message { flex: 1; padding: 10px; font-size: 16px; }
+        #send { padding: 10px ; font-size: 16px; }
+        #clear { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
+        .user { text-align: right; color: blue; margin: 5px 0; }
+        .bot { text-align: left; color: green; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center;">Cohere 聊天機器人</h1>
+    <div id="chat-window"></div>
+    <div id="input-area">
+        <input type="text" id="message" placeholder="輸入您的訊息..." />
+        <button id="send">送出</button>
+        <button id="clear">清除對話</button>
+    </div>
+
+    <script>
+        const sendButton = document.getElementById('send');
+        const clearButton = document.getElementById('clear');
+        const messageInput = document.getElementById('message');
+        const chatWindow = document.getElementById('chat-window');
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        clearButton.addEventListener('click', clearConversation);
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+
+            appendMessage('user', message);
+            messageInput.value = '';
+
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendMessage('bot', data.response);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                appendMessage('bot', '抱歉，發生錯誤。');
+            });
+        }
+
+        function appendMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = sender;
+            messageDiv.textContent = text;
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function clearConversation() {
+            fetch('/api/clear', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success'){
+                    chatWindow.innerHTML = '';
+                    alert('對話已清除。');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
