@@ -9,10 +9,20 @@
         #chat-window { width: 500px; height: 600px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin: 20px auto; background-color: #fff; }
         #input-area { width: 500px; margin: 10px auto; display: flex; }
         #message { flex: 1; padding: 10px; font-size: 16px; }
-        #send { padding: 10px ; font-size: 16px; }
+        #send { padding: 10px 20px; font-size: 16px; }
         #clear { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
-        .user { text-align: right; color: blue; margin: 5px 0; }
-        .bot { text-align: left; color: green; margin: 5px 0; }
+        .message { display: flex; align-items: flex-start; margin: 10px 0; }
+        .message .icon {
+            margin-right: 10px;
+            width: 24px;
+            height: 24px;
+        }
+        .message .text {
+            background-color: #e6e6e6;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
     </style>
 </head>
 <body>
@@ -62,8 +72,23 @@
 
         function appendMessage(sender, text) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = sender;
-            messageDiv.textContent = text;
+            messageDiv.className = 'message';
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'icon';
+
+            if (sender === 'user') {
+                iconDiv.innerHTML = '<img src="../static/images/iconE.png" alt="User Icon" width="24" height="24">'; // 使用自定義使用者圖示
+            } else {
+                iconDiv.innerHTML = '<img src="../static/images/iconR.png" alt="Bot Icon" width="24" height="24">'; // 使用自定義機器人圖示
+            }
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'text';
+            textDiv.textContent = text;
+
+            messageDiv.appendChild(iconDiv);
+            messageDiv.appendChild(textDiv);
             chatWindow.appendChild(messageDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
