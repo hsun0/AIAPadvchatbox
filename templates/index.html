@@ -4,24 +4,55 @@
     <meta charset="UTF-8">
     <title>Cohere 聊天機器人</title>
     <link rel="icon" href="../static/images/iconR.png" type="image/x-icon" />
+    <!-- 引入 Font Awesome（如果仍使用） -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pk0jRv0L/JSt5sC6BqNRB7X+FsO2Thk9qU0x+VGqCqIu/6YcWB+g5l5rP+M2sN7N8VgjQlKc3E6Yf/NfE1D3lw==" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
     <style>
         body { font-family: Arial, sans-serif; background-color: #f2f2f2; }
         #chat-window { width: 500px; height: 600px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin: 20px auto; background-color: #fff; }
-        #input-area { width: 500px; margin: 10px auto; display: flex; }
+        #input-area { width: 500px; margin: 10px auto; display: flex; align-items: center; }
+        #change-icon { width: 40px; height: 40px; border: none; background: none; cursor: pointer; padding: 0; margin-right: 10px; }
+        #change-icon img { width: 100%; height: 100%; border-radius: 50%; }
         #message { flex: 1; padding: 10px; font-size: 16px; }
-        #send { padding: 10px 20px; font-size: 16px; }
+        #send { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
         #clear { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
         .message { display: flex; align-items: flex-start; margin: 10px 0; }
         .message .icon {
             margin-right: 10px;
-            width: 24px;
-            height: 24px;
+            width: 40px;
+            height: 40px;
+        }
+        .message .icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
         }
         .message .text {
             background-color: #e6e6e6;
             padding: 10px;
             border-radius: 5px;
             max-width: 80%;
+            position: relative;
+        }
+        .message .text::after {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: -10px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent #e6e6e6 transparent transparent;
+        }
+        /* Bot messages alignment */
+        .bot .message {
+            flex-direction: row;
+        }
+        .user .message {
+            flex-direction: row-reverse;
+        }
+        .user .text::after {
+            left: auto;
+            right: -10px;
+            border-color: transparent transparent transparent #e6e6e6;
         }
     </style>
 </head>
@@ -29,6 +60,9 @@
     <h1 style="text-align:center;">Cohere 聊天機器人</h1>
     <div id="chat-window"></div>
     <div id="input-area">
+        <button id="change-icon">
+            <img src="../static/images/iconE.png" alt="User Icon" id="current-icon">
+        </button>
         <input type="text" id="message" placeholder="輸入您的訊息..." />
         <button id="send">送出</button>
         <button id="clear">清除對話</button>
@@ -39,6 +73,16 @@
         const clearButton = document.getElementById('clear');
         const messageInput = document.getElementById('message');
         const chatWindow = document.getElementById('chat-window');
+        const changeIconButton = document.getElementById('change-icon');
+        const currentIconImg = document.getElementById('current-icon');
+
+        // 定義使用者圖示陣列
+        const userIcons = [
+            '../static/images/iconE.png',
+            '../static/images/iconF.png',
+            '../static/images/iconM.png'
+        ];
+        let currentIconIndex = 0;
 
         sendButton.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', function(e) {
@@ -47,6 +91,7 @@
             }
         });
         clearButton.addEventListener('click', clearConversation);
+        changeIconButton.addEventListener('click', changeUserIcon);
 
         function sendMessage() {
             const message = messageInput.value.trim();
@@ -72,23 +117,27 @@
 
         function appendMessage(sender, text) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
+            messageDiv.className = sender;
+
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.className = 'message';
 
             const iconDiv = document.createElement('div');
             iconDiv.className = 'icon';
 
             if (sender === 'user') {
-                iconDiv.innerHTML = '<img src="../static/images/iconE.png" alt="User Icon" width="24" height="24">'; // 使用自定義使用者圖示
+                iconDiv.innerHTML = `<img src="${userIcons[currentIconIndex]}" alt="User Icon">`;
             } else {
-                iconDiv.innerHTML = '<img src="../static/images/iconR.png" alt="Bot Icon" width="24" height="24">'; // 使用自定義機器人圖示
+                iconDiv.innerHTML = '<img src="../static/images/iconR.png" alt="Bot Icon">';
             }
 
             const textDiv = document.createElement('div');
             textDiv.className = 'text';
             textDiv.textContent = text;
 
-            messageDiv.appendChild(iconDiv);
-            messageDiv.appendChild(textDiv);
+            messageContentDiv.appendChild(iconDiv);
+            messageContentDiv.appendChild(textDiv);
+            messageDiv.appendChild(messageContentDiv);
             chatWindow.appendChild(messageDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
@@ -107,6 +156,13 @@
             .catch(error => {
                 console.error('Error:', error);
             });
+        }
+
+        function changeUserIcon() {
+            // 增加索引並循環
+            currentIconIndex = (currentIconIndex + 1) % userIcons.length;
+            // 更新按鈕上的圖示
+            currentIconImg.src = userIcons[currentIconIndex];
         }
     </script>
 </body>
