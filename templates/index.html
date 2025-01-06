@@ -284,6 +284,47 @@
                 });
 
                 textDiv.appendChild(actionButtonsDiv);
+            }else if(sender === 'bot'){
+                // 如果是機器人訊息，添加功能按鈕
+                const actionButtonsDiv = document.createElement('div');
+                actionButtonsDiv.className = 'action-buttons';
+
+                // 定義功能按鈕及其圖示
+                const actions = [
+                    { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
+                    { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
+                    { name: 'view', normal: '/static/images/VIEW.png', clicked: '/static/images/VIEWclicked.png' },
+                    { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
+                    { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' }
+                ];
+
+                actions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.className = 'action-button';
+                    button.id = `${action.name}-button`;
+
+                    const img = document.createElement('img');
+                    img.src = action.normal;
+                    img.alt = `${action.name} icon`;
+
+                    button.appendChild(img);
+                    actionButtonsDiv.appendChild(button);
+
+                    // 添加事件監聽器
+                    button.addEventListener('mousedown', () => {
+                        img.src = action.clicked;
+                    });
+
+                    button.addEventListener('mouseup', () => {
+                        img.src = action.normal;
+                    });
+
+                    button.addEventListener('mouseleave', () => {
+                        img.src = action.normal;
+                    });
+                });
+
+                textDiv.appendChild(actionButtonsDiv);
             }
 
             messageContentDiv.appendChild(iconDiv);
