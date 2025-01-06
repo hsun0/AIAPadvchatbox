@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <title>Cohere 聊天機器人</title>
     <link rel="icon" href="../static/images/iconR.png" type="image/x-icon" />
-    <!-- 引入 Font Awesome（如果仍使用） -->
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pk0jRv0L/JSt5sC6BqNRB7X+FsO2Thk9qU0x+VGqCqIu/6YcWB+g5l5rP+M2sN7N8VgjQlKc3E6Yf/NfE1D3lw==" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
+    <!-- 如果使用 Font Awesome，取消註解以下行 -->
+    <!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pk0jRv0L/JSt5sC6BqNRB7X+FsO2Thk9qU0x+VGqCqIu/6YcWB+g5l5rP+M2sN7N8VgjQlKc3E6Yf/NfE1D3lw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    -->
     <style>
         body { font-family: Arial, sans-serif; background-color: #f2f2f2; }
         #chat-window { width: 500px; height: 600px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin: 20px auto; background-color: #fff; }
@@ -54,6 +56,13 @@
             right: -10px;
             border-color: transparent transparent transparent #e6e6e6;
         }
+        /* 添加時間戳樣式 */
+        .message .timestamp {
+            font-size: 12px;
+            color: #888;
+            text-align: right;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -83,6 +92,15 @@
             '../static/images/iconM.png'
         ];
         let currentIconIndex = 0;
+
+        // 在頁面加載時，從 localStorage 讀取 currentIconIndex
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedIndex = localStorage.getItem('currentIconIndex');
+            if (storedIndex !== null && !isNaN(storedIndex)) {
+                currentIconIndex = parseInt(storedIndex, 10);
+                currentIconImg.src = userIcons[currentIconIndex];
+            }
+        });
 
         sendButton.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', function(e) {
@@ -126,7 +144,7 @@
             iconDiv.className = 'icon';
 
             if (sender === 'user') {
-                iconDiv.innerHTML = `<img src="${userIcons[currentIconIndex]}" alt="User Icon">`;
+                iconDiv.innerHTML = `<img src="${userIcons[currentIconIndex]}" alt="User Icon" class="user-icon">`;
             } else {
                 iconDiv.innerHTML = '<img src="../static/images/iconR.png" alt="Bot Icon">';
             }
@@ -134,6 +152,13 @@
             const textDiv = document.createElement('div');
             textDiv.className = 'text';
             textDiv.textContent = text;
+
+            // 添加時間戳
+            const timeStamp = document.createElement('div');
+            timeStamp.className = 'timestamp';
+            const now = new Date();
+            timeStamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            textDiv.appendChild(timeStamp);
 
             messageContentDiv.appendChild(iconDiv);
             messageContentDiv.appendChild(textDiv);
@@ -163,6 +188,13 @@
             currentIconIndex = (currentIconIndex + 1) % userIcons.length;
             // 更新按鈕上的圖示
             currentIconImg.src = userIcons[currentIconIndex];
+            // 更新所有使用者訊息中的圖示
+            const userIconElements = document.querySelectorAll('.user-icon');
+            userIconElements.forEach(img => {
+                img.src = userIcons[currentIconIndex];
+            });
+            // 儲存當前圖示索引到 localStorage
+            localStorage.setItem('currentIconIndex', currentIconIndex);
         }
     </script>
 </body>
