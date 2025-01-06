@@ -87,7 +87,12 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        appendMessage('bot', data.response);
+        if (data.response.startsWith('A8B4')) {
+            result = String(eval(data.response.substring(5)));
+            appendMessage('bot', result);
+        }else{
+            appendMessage('bot', data.response);
+        }
     })
     .catch(error => {
         console.error('Error:', error);
