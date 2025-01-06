@@ -1,3 +1,4 @@
+// static/js/script.js
 // 獲取 DOM 元素
 const sendButton = document.getElementById('send');
 const clearButton = document.getElementById('clear');
