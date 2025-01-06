@@ -9,7 +9,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pk0jRv0L/JSt5sC6BqNRB7X+FsO2Thk9qU0x+VGqCqIu/6YcWB+g5l5rP+M2sN7N8VgjQlKc3E6Yf/NfE1D3lw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     -->
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f2f2f2; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f2f2f2; 
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #4CAF50;
+            color: white;
+        }
         #chat-window { 
             width: 500px; 
             height: 600px; 
@@ -26,6 +38,12 @@
             display: flex; 
             align-items: center; 
         }
+        #icon-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 10px;
+        }
         #change-icon { 
             width: 40px; 
             height: 40px; 
@@ -33,12 +51,29 @@
             background: none; 
             cursor: pointer; 
             padding: 0; 
-            margin-right: 10px; 
+            margin-bottom: 5px; 
         }
         #change-icon img { 
             width: 100%; 
             height: 100%; 
             border-radius: 50%; 
+        }
+        #additional-buttons {
+            display: flex;
+            gap: 5px; /* 調整按鈕之間的間距 */
+        }
+        .small-action-button {
+            width: 26px;
+            height: 26px;
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+        }
+        .small-action-button img {
+            width: 100%;
+            height: 100%;
+            border-radius: 3px; /* 圓角 */
         }
         #message { 
             flex: 1; 
@@ -133,8 +168,8 @@
 
         /* 功能按鈕的樣式 */
         .action-button {
-            width: 26px; /* 按鈕寬度為 20px */
-            height: 26px; /* 按鈕高度為 20px */
+            width: 26px; /* 按鈕寬度為 26px */
+            height: 26px; /* 按鈕高度為 26px */
             border: none;
             background: none;
             padding: 0;
@@ -146,15 +181,32 @@
             height: 100%;
             border-radius: 3px; /* 圓角 */
         }
+
+        /* 按鈕點擊動畫 */
+        .action-button:active img,
+        .small-action-button:active img {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+        }
     </style>
 </head>
 <body>
-    <h1 style="text-align:center;">Cohere 聊天機器人</h1>
+    <h1>Cohere 聊天機器人</h1>
     <div id="chat-window"></div>
     <div id="input-area">
-        <button id="change-icon">
-            <img src="/static/images/iconE.png" alt="User Icon" id="current-icon">
-        </button>
+        <div id="icon-buttons">
+            <button id="change-icon">
+                <img src="/static/images/iconE.png" alt="User Icon" id="current-icon">
+            </button>
+            <div id="additional-buttons">
+                <button id="listen-button" class="small-action-button" aria-label="Listen Action">
+                    <img src="/static/images/LISTEN.png" alt="Listen Icon">
+                </button>
+                <button id="think-button" class="small-action-button" aria-label="Think Action">
+                    <img src="/static/images/THINK.png" alt="Think Icon">
+                </button>
+            </div>
+        </div>
         <input type="text" id="message" placeholder="輸入您的訊息..." />
         <button id="send">送出</button>
         <button id="clear">清除對話</button>
@@ -167,6 +219,8 @@
         const chatWindow = document.getElementById('chat-window');
         const changeIconButton = document.getElementById('change-icon');
         const currentIconImg = document.getElementById('current-icon');
+        const listenButton = document.getElementById('listen-button');
+        const thinkButton = document.getElementById('think-button');
 
         // 定義使用者圖示陣列
         const userIcons = [
@@ -175,6 +229,18 @@
             '/static/images/iconM.png'
         ];
         let currentIconIndex = 0;
+
+        // 定義功能按鈕的圖示路徑
+        const actionIcons = {
+            listen: {
+                normal: '/static/images/LISTEN.png',
+                clicked: '/static/images/LISTENclicked.png'
+            },
+            think: {
+                normal: '/static/images/THINK.png',
+                clicked: '/static/images/THINKclicked.png'
+            }
+        };
 
         // 在頁面加載時，從 localStorage 讀取 currentIconIndex
         document.addEventListener('DOMContentLoaded', () => {
@@ -193,6 +259,31 @@
         });
         clearButton.addEventListener('click', clearConversation);
         changeIconButton.addEventListener('click', changeUserIcon);
+
+        // 添加事件監聽器到新增的功能按鈕
+        listenButton.addEventListener('mousedown', () => {
+            listenButton.querySelector('img').src = actionIcons.listen.clicked;
+        });
+
+        listenButton.addEventListener('mouseup', () => {
+            listenButton.querySelector('img').src = actionIcons.listen.normal;
+        });
+
+        listenButton.addEventListener('mouseleave', () => {
+            listenButton.querySelector('img').src = actionIcons.listen.normal;
+        });
+
+        thinkButton.addEventListener('mousedown', () => {
+            thinkButton.querySelector('img').src = actionIcons.think.clicked;
+        });
+
+        thinkButton.addEventListener('mouseup', () => {
+            thinkButton.querySelector('img').src = actionIcons.think.normal;
+        });
+
+        thinkButton.addEventListener('mouseleave', () => {
+            thinkButton.querySelector('img').src = actionIcons.think.normal;
+        });
 
         function sendMessage() {
             const message = messageInput.value.trim();
@@ -243,8 +334,8 @@
             timeStamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             textDiv.appendChild(timeStamp);
 
-            // 如果是使用者訊息，添加功能按鈕
-            if (sender === 'user') {
+            // 如果是使用者或機器人訊息，添加功能按鈕
+            if (sender === 'user' || sender === 'bot') {
                 const actionButtonsDiv = document.createElement('div');
                 actionButtonsDiv.className = 'action-buttons';
 
@@ -253,47 +344,6 @@
                     { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
                     { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
                     { name: 'listen', normal: '/static/images/LISTEN.png', clicked: '/static/images/LISTENclicked.png' },
-                    { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
-                    { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' }
-                ];
-
-                actions.forEach(action => {
-                    const button = document.createElement('button');
-                    button.className = 'action-button';
-                    button.id = `${action.name}-button`;
-
-                    const img = document.createElement('img');
-                    img.src = action.normal;
-                    img.alt = `${action.name} icon`;
-
-                    button.appendChild(img);
-                    actionButtonsDiv.appendChild(button);
-
-                    // 添加事件監聽器
-                    button.addEventListener('mousedown', () => {
-                        img.src = action.clicked;
-                    });
-
-                    button.addEventListener('mouseup', () => {
-                        img.src = action.normal;
-                    });
-
-                    button.addEventListener('mouseleave', () => {
-                        img.src = action.normal;
-                    });
-                });
-
-                textDiv.appendChild(actionButtonsDiv);
-            }else if(sender === 'bot'){
-                // 如果是機器人訊息，添加功能按鈕
-                const actionButtonsDiv = document.createElement('div');
-                actionButtonsDiv.className = 'action-buttons';
-
-                // 定義功能按鈕及其圖示
-                const actions = [
-                    { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
-                    { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
-                    { name: 'view', normal: '/static/images/VIEW.png', clicked: '/static/images/VIEWclicked.png' },
                     { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
                     { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' }
                 ];
