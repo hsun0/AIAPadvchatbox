@@ -3,21 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <title>Cohere 聊天機器人</title>
-    <link rel="icon" href="../static/images/iconR.png" type="image/x-icon" />
+    <link rel="icon" href="/static/images/iconR.png" type="image/x-icon" />
     <!-- 如果使用 Font Awesome，取消註解以下行 -->
     <!--
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pk0jRv0L/JSt5sC6BqNRB7X+FsO2Thk9qU0x+VGqCqIu/6YcWB+g5l5rP+M2sN7N8VgjQlKc3E6Yf/NfE1D3lw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     -->
     <style>
         body { font-family: Arial, sans-serif; background-color: #f2f2f2; }
-        #chat-window { width: 500px; height: 600px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin: 20px auto; background-color: #fff; }
-        #input-area { width: 500px; margin: 10px auto; display: flex; align-items: center; }
-        #change-icon { width: 40px; height: 40px; border: none; background: none; cursor: pointer; padding: 0; margin-right: 10px; }
-        #change-icon img { width: 100%; height: 100%; border-radius: 50%; }
-        #message { flex: 1; padding: 10px; font-size: 16px; }
-        #send { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
-        #clear { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
-        .message { display: flex; align-items: flex-start; margin: 10px 0; }
+        #chat-window { 
+            width: 500px; 
+            height: 600px; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            overflow-y: scroll; 
+            margin: 20px auto; 
+            background-color: #fff; 
+            border-radius: 5px;
+        }
+        #input-area { 
+            width: 500px; 
+            margin: 10px auto; 
+            display: flex; 
+            align-items: center; 
+        }
+        #change-icon { 
+            width: 40px; 
+            height: 40px; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            padding: 0; 
+            margin-right: 10px; 
+        }
+        #change-icon img { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+        }
+        #message { 
+            flex: 1; 
+            padding: 10px; 
+            font-size: 16px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+        }
+        #send { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            margin-left: 10px; 
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #send:hover {
+            background-color: #45a049;
+        }
+        #clear { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            margin-left: 10px; 
+            border: none;
+            background-color: #f44336;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #clear:hover {
+            background-color: #da190b;
+        }
+        .message { 
+            display: flex; 
+            align-items: flex-start; 
+            margin: 10px 0; 
+        }
         .message .icon {
             margin-right: 10px;
             width: 40px;
@@ -30,10 +90,11 @@
         }
         .message .text {
             background-color: #e6e6e6;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 10px 15px;
+            border-radius: 10px;
             max-width: 80%;
             position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .message .text::after {
             content: "";
@@ -63,6 +124,28 @@
             text-align: right;
             margin-top: 5px;
         }
+        /* 新增功能按鈕的容器 */
+        .action-buttons {
+            display: flex;
+            gap: 10px; /* 按鈕之間的間距 */
+            margin-top: 5px; /* 與訊息框的間距 */
+        }
+
+        /* 功能按鈕的樣式 */
+        .action-button {
+            width: 20px; /* 按鈕寬度為 20px */
+            height: 20px; /* 按鈕高度為 20px */
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .action-button img {
+            width: 100%;
+            height: 100%;
+            border-radius: 3px; /* 圓角 */
+        }
     </style>
 </head>
 <body>
@@ -70,7 +153,7 @@
     <div id="chat-window"></div>
     <div id="input-area">
         <button id="change-icon">
-            <img src="../static/images/iconE.png" alt="User Icon" id="current-icon">
+            <img src="/static/images/iconE.png" alt="User Icon" id="current-icon">
         </button>
         <input type="text" id="message" placeholder="輸入您的訊息..." />
         <button id="send">送出</button>
@@ -87,9 +170,9 @@
 
         // 定義使用者圖示陣列
         const userIcons = [
-            '../static/images/iconE.png',
-            '../static/images/iconF.png',
-            '../static/images/iconM.png'
+            '/static/images/iconE.png',
+            '/static/images/iconF.png',
+            '/static/images/iconM.png'
         ];
         let currentIconIndex = 0;
 
@@ -146,7 +229,7 @@
             if (sender === 'user') {
                 iconDiv.innerHTML = `<img src="${userIcons[currentIconIndex]}" alt="User Icon" class="user-icon">`;
             } else {
-                iconDiv.innerHTML = '<img src="../static/images/iconR.png" alt="Bot Icon">';
+                iconDiv.innerHTML = '<img src="/static/images/iconR.png" alt="Bot Icon">';
             }
 
             const textDiv = document.createElement('div');
@@ -159,6 +242,49 @@
             const now = new Date();
             timeStamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             textDiv.appendChild(timeStamp);
+
+            // 如果是使用者訊息，添加功能按鈕
+            if (sender === 'user') {
+                const actionButtonsDiv = document.createElement('div');
+                actionButtonsDiv.className = 'action-buttons';
+
+                // 定義功能按鈕及其圖示
+                const actions = [
+                    { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
+                    { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
+                    { name: 'listen', normal: '/static/images/LISTEN.png', clicked: '/static/images/LISTENclicked.png' },
+                    { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
+                    { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' }
+                ];
+
+                actions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.className = 'action-button';
+                    button.id = `${action.name}-button`;
+
+                    const img = document.createElement('img');
+                    img.src = action.normal;
+                    img.alt = `${action.name} icon`;
+
+                    button.appendChild(img);
+                    actionButtonsDiv.appendChild(button);
+
+                    // 添加事件監聽器
+                    button.addEventListener('mousedown', () => {
+                        img.src = action.clicked;
+                    });
+
+                    button.addEventListener('mouseup', () => {
+                        img.src = action.normal;
+                    });
+
+                    button.addEventListener('mouseleave', () => {
+                        img.src = action.normal;
+                    });
+                });
+
+                textDiv.appendChild(actionButtonsDiv);
+            }
 
             messageContentDiv.appendChild(iconDiv);
             messageContentDiv.appendChild(textDiv);
