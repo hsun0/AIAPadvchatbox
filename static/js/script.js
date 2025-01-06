@@ -1,4 +1,5 @@
 // static/js/script.js
+
 // 獲取 DOM 元素
 const sendButton = document.getElementById('send');
 const clearButton = document.getElementById('clear');
@@ -8,6 +9,11 @@ const changeIconButton = document.getElementById('change-icon');
 const currentIconImg = document.getElementById('current-icon');
 const listenButton = document.getElementById('listen-button');
 const thinkButton = document.getElementById('think-button');
+
+// 獲取模態窗口元素
+const modal = document.getElementById('codeModal');
+const closeModal = document.getElementsByClassName('close')[0];
+const codeContent = document.getElementById('codeContent');
 
 // 定義使用者圖示陣列
 const userIcons = [
@@ -91,7 +97,7 @@ function sendMessage() {
         if (data.response.startsWith('A8B4')) {
             result = String(eval(data.response.substring(5)));
             appendMessage('bot', result);
-        }else{
+        } else {
             appendMessage('bot', data.response);
         }
     })
@@ -135,12 +141,18 @@ function appendMessage(sender, text) {
         actionButtonsDiv.className = 'action-buttons';
 
         // 定義功能按鈕及其圖示
-        const actions = [
+        const actions = sender === 'user' ? [
             { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
             { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
             { name: 'listen', normal: '/static/images/LISTEN.png', clicked: '/static/images/LISTENclicked.png' },
             { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
             { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' }
+        ] : [
+            { name: 'redo', normal: '/static/images/REDO.png', clicked: '/static/images/REDOclicked.png' },
+            { name: 'edit', normal: '/static/images/EDIT.png', clicked: '/static/images/EDITclicked.png' },
+            { name: 'view', normal: '/static/images/VIEW.png', clicked: '/static/images/VIEWclicked.png' },
+            { name: 'speak', normal: '/static/images/SPEAK.png', clicked: '/static/images/SPEAKclicked.png' },
+            { name: 'think', normal: '/static/images/THINK.png', clicked: '/static/images/THINKclicked.png' },
         ];
 
         actions.forEach(action => {
@@ -167,6 +179,13 @@ function appendMessage(sender, text) {
             button.addEventListener('mouseleave', () => {
                 img.src = action.normal;
             });
+
+            // 特別為 VIEW 按鈕添加點擊事件
+            if (action.name === 'view' && sender === 'bot') {
+                button.addEventListener('click', () => {
+                    handleViewButtonClick(text);
+                });
+            }
         });
 
         textDiv.appendChild(actionButtonsDiv);
@@ -177,6 +196,28 @@ function appendMessage(sender, text) {
     messageDiv.appendChild(messageContentDiv);
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// 處理 VIEW 按鈕點擊事件
+function handleViewButtonClick(text) {
+    // 假設 eval() 是在這行執行的
+    const evalCode = "result = String(eval(data.response.substring(5)));";
+    codeContent.textContent = evalCode;
+
+    // 顯示模態窗口
+    modal.style.display = "block";
+}
+
+// 當用戶點擊 <span> (x)，關閉模態窗口
+closeModal.onclick = function() {
+    modal.style.display = "none";
+}
+
+// 當用戶在模態窗口外點擊，關閉模態窗口
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
 }
 
 // 清除對話函數

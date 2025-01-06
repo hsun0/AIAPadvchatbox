@@ -203,3 +203,46 @@ h1 {
     transform: scale(0.95);
     transition: transform 0.1s;
 }
+
+.modal {
+    display: none; /* 隱藏模態窗口 */
+    position: fixed; /* 固定位置 */
+    z-index: 1000; /* 確保模態窗口在頂層 */
+    left: 0;
+    top: 0;
+    width: 100%; /* 全寬 */
+    height: 100%; /* 全高 */
+    overflow: auto; /* 需要時滾動 */
+    background-color: rgba(0,0,0,0.5); /* 背景半透明 */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 上下居中 */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 60%; /* 模態窗口寬度 */
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+#codeContent {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
