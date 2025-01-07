@@ -50,6 +50,9 @@ function speakText(text) {
     }
 }
 
+// 初始化訊息索引
+let messageIndex = 0;
+
 // 在頁面加載時，從 localStorage 讀取 currentIconIndex
 document.addEventListener('DOMContentLoaded', () => {
     const storedIndex = localStorage.getItem('currentIconIndex');
@@ -99,7 +102,7 @@ function sendMessage() {
     const message = messageInput.value.trim();
     if (message === '') return;
 
-    appendMessage('user', message);
+    appendMessage('user', message, null);
     messageInput.value = '';
 
     fetch('/api/chat', {
@@ -110,15 +113,16 @@ function sendMessage() {
     .then(response => response.json())
     .then(data => {
         if (data.response.startsWith('A8B4')) {
-            const result = String(eval(data.response.substring(5)));
-            appendMessage('bot', result, data.response.substring(5));
+            const calcuText = data.response.substring(5);
+            const result = String(eval(calcuText));
+            appendMessage('bot', result, calcuText);
         } else {
-            appendMessage('bot', data.response, "");
+            appendMessage('bot', data.response, null);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        appendMessage('bot', '抱歉，發生錯誤。', "");
+        appendMessage('bot', '抱歉，發生錯誤。', null);
     });
 }
 
@@ -126,6 +130,7 @@ function sendMessage() {
 function appendMessage(sender, text, calcuText) {
     const messageDiv = document.createElement('div');
     messageDiv.className = sender;
+    messageDiv.setAttribute('data-index', messageIndex); // 設定訊息索引
 
     const messageContentDiv = document.createElement('div');
     messageContentDiv.className = 'message';
@@ -173,7 +178,7 @@ function appendMessage(sender, text, calcuText) {
         actions.forEach(action => {
             const button = document.createElement('button');
             button.className = 'action-button';
-            button.id = `${action.name}-button`;
+            button.dataset.action = action.name; // 使用 data-action 屬性標識按鈕類型
 
             const img = document.createElement('img');
             img.src = action.normal;
@@ -208,6 +213,13 @@ function appendMessage(sender, text, calcuText) {
                     speakText(text);
                 });
             }
+
+            // 特別為 REDO 按鈕添加點擊事件
+            if (action.name === 'redo') {
+                button.addEventListener('click', () => {
+                    redoMessage(sender, messageDiv.getAttribute('data-index'), text);
+                });
+            }
         });
 
         textDiv.appendChild(actionButtonsDiv);
@@ -218,17 +230,51 @@ function appendMessage(sender, text, calcuText) {
     messageDiv.appendChild(messageContentDiv);
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    messageIndex++; // 增加訊息索引
 }
 
 // 處理 VIEW 按鈕點擊事件
 function handleViewButtonClick(text, calcuText) {
-    const evalCode = "result = String(eval(\"" + calcuText.trim() + "\"));";
-    const evalResult = text;
-    codeContent.textContent = evalCode;
-    codeResult.textContent = evalResult;
+    if (calcuText) {
+        // 假設 eval() 是在這行執行的
+        const evalCode = `result = String(eval("${calcuText.trim()}"));`;
+        const evalResult = text;
+        codeContent.textContent = evalCode;
+        codeResult.textContent = evalResult;
 
-    // 顯示模態窗口
-    modal.style.display = "block";
+        // 顯示模態窗口
+        modal.style.display = "block";
+    } else {
+        alert('這條訊息不是數學表達式，無法顯示代碼。');
+    }
+}
+
+// 處理 REDO 按鈕點擊事件
+function redoMessage(sender, index, text) {
+    fetch('/api/redo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: sender, index: parseInt(index, 10) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response) {
+            if (data.response.startsWith('A8B4')) {
+                const calcuText = data.response.substring(5);
+                const result = String(eval(calcuText));
+                appendMessage('bot', result, calcuText);
+            } else {
+                appendMessage('bot', data.response, null);
+            }
+        } else if (data.error) {
+            alert(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('抱歉，無法重新生成回應。');
+    });
 }
 
 // 當用戶點擊 <span> (x)，關閉模態窗口

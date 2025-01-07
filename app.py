@@ -1,4 +1,4 @@
-#app.py
+# app.py
 import os
 import shutil
 from flask import Flask, request, jsonify, render_template, session
@@ -42,7 +42,8 @@ DEFAULT_PROMPT = (
 def blur(text):
     if(text[0:2] == "A8"):
         text = "A8B4: " + text[5:]
-    else: return text
+    else:
+        return text
     flag = False
     for c in text[5:]:
         if c in "0123456789":
@@ -114,19 +115,106 @@ def chat():
         generated_text = blur(generated_text)
         print("generated_text:", generated_text)
         
-        # 將機器人回覆加入 context_window
-        if is_math_expression(generated_text):
-            context_window.append({'role': 'bot', 'content': eval(generated_text[5:])})
-        else:
-            context_window.append({'role': 'bot', 'content': generated_text})
+        # 將機器人回覆加入 context_window（不使用 eval，保留在前端處理）
+        context_window.append({'role': 'bot', 'content': generated_text})
 
         # 限制 context_window 的大小
         if len(context_window) > MAX_CONTEXT * 2:
             # 移除最早的一組對話
             context_window = context_window[-MAX_CONTEXT * 2:]
             session['context_window'] = context_window
+        else:
+            session['context_window'] = context_window
 
-        return jsonify({'response': generated_text})
+        return jsonify({'response': generated_text, 'index': len(context_window)-1})
+    else:
+        return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
+
+# 新增 redo 路由
+@app.route('/api/redo', methods=['POST'])
+def redo():
+    data = request.get_json()
+    sender = data.get('sender')  # 'user' 或 'bot'
+    index = data.get('index')    # 整數，對應 context_window 的索引
+
+    if sender not in ['user', 'bot'] or index is None:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    context_window = session.get('context_window', [])
+
+    if sender == 'user':
+        # 使用者訊息位於 context_window 的偶數索引（0, 2, 4, ...）
+        user_message_index = index
+        if user_message_index >= len(context_window) or context_window[user_message_index]['role'] != 'user':
+            return jsonify({'error': 'Invalid user message index'}), 400
+
+        # 截斷 context_window，移除 redo 訊息之後的所有內容
+        context_window = context_window[:user_message_index + 1]
+
+    elif sender == 'bot':
+        # 機器人訊息位於 context_window 的奇數索引（1, 3, 5, ...）
+        bot_message_index = index
+        if bot_message_index >= len(context_window) or context_window[bot_message_index]['role'] != 'bot':
+            return jsonify({'error': 'Invalid bot message index'}), 400
+
+        # 尋找對應的使用者訊息
+        user_message_index = bot_message_index - 1
+        if user_message_index < 0 or context_window[user_message_index]['role'] != 'user':
+            return jsonify({'error': 'Corresponding user message not found'}), 400
+
+        # 截斷 context_window，移除 redo 訊息之後的所有內容
+        context_window = context_window[:user_message_index + 1]
+
+    # 更新 session
+    session['context_window'] = context_window
+
+    # 取得需要重新生成的使用者訊息
+    if sender == 'user':
+        user_message = context_window[user_message_index]['content']
+    else:
+        user_message = context_window[user_message_index]['content']
+
+    # 構建 prompt
+    prompt = DEFAULT_PROMPT + "\n\nbackground:{"
+    for exchange in context_window:
+        if exchange['role'] == 'user':
+            prompt += f"User: {exchange['content']}\n"
+        elif exchange['role'] == 'bot':
+            prompt += f"Bot: {exchange['content']}\n"
+    prompt += "}\n"
+    prompt += "Current user:" + user_message + "\n"
+    prompt += "Bot:"
+
+    headers = {
+        'Authorization': f'Bearer {COHERE_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+
+    payload = {
+        'model': 'command-r-plus-08-2024',
+        'prompt': prompt,
+        'max_tokens': 150,
+        'temperature': 0.7,
+    }
+
+    response = requests.post(COHERE_API_URL, headers=headers, json=payload)
+
+    if response.status_code == 200:
+        generated_text = response.json()['generations'][0]['text'].strip()
+        generated_text = blur(generated_text)
+        print("redo_generated_text:", generated_text)
+        
+        # 將新生成的機器人回覆加入 context_window
+        context_window.append({'role': 'bot', 'content': generated_text})
+
+        # 限制 context_window 的大小
+        if len(context_window) > MAX_CONTEXT * 2:
+            context_window = context_window[-MAX_CONTEXT * 2:]
+        session['context_window'] = context_window
+
+        # 返回新生成的回應和其在 context_window 中的索引
+        new_bot_index = len(context_window) - 1
+        return jsonify({'response': generated_text, 'index': new_bot_index})
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
 
