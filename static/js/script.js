@@ -252,10 +252,25 @@ function handleViewButtonClick(text, calcuText) {
 
 // 處理 REDO 按鈕點擊事件
 function redoMessage(sender, index, text) {
+    index = parseInt(index, 10);
+
+    // 移除所有 data-index 大於 index 的訊息
+    const messages = chatWindow.querySelectorAll(`[data-index]`);
+    messages.forEach(msg => {
+        const msgIndex = parseInt(msg.getAttribute('data-index'), 10);
+        if (msgIndex > index) {
+            chatWindow.removeChild(msg);
+        }
+    });
+
+    // 重置 messageIndex
+    messageIndex = index + 1;
+
+    // 發送 redo 請求到後端
     fetch('/api/redo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: sender, index: parseInt(index, 10) })
+        body: JSON.stringify({ sender: sender, index: index })
     })
     .then(response => response.json())
     .then(data => {
@@ -299,6 +314,7 @@ function clearConversation() {
         if(data.status === 'success'){
             chatWindow.innerHTML = '';
             alert('對話已清除。');
+            messageIndex = 0; // 重置訊息索引
         }
     })
     .catch(error => {
