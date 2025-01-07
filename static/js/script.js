@@ -36,6 +36,20 @@ const actionIcons = {
     }
 };
 
+// 定義語音朗讀函數
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        // 可選：設置語言、語調等屬性
+        utterance.lang = 'zh-TW'; // 根據需要設置語言
+        utterance.pitch = 1;
+        utterance.rate = 1;
+        speechSynthesis.speak(utterance);
+    } else {
+        alert('抱歉，您的瀏覽器不支持語音合成功能。');
+    }
+}
+
 // 在頁面加載時，從 localStorage 讀取 currentIconIndex
 document.addEventListener('DOMContentLoaded', () => {
     const storedIndex = localStorage.getItem('currentIconIndex');
@@ -96,7 +110,7 @@ function sendMessage() {
     .then(response => response.json())
     .then(data => {
         if (data.response.startsWith('A8B4')) {
-            result = String(eval(data.response.substring(5)));
+            const result = String(eval(data.response.substring(5)));
             appendMessage('bot', result, data.response.substring(5));
         } else {
             appendMessage('bot', data.response, "");
@@ -187,6 +201,13 @@ function appendMessage(sender, text, calcuText) {
                     handleViewButtonClick(text, calcuText);
                 });
             }
+
+            // 特別為 SPEAK 按鈕添加點擊事件
+            if (action.name === 'speak') {
+                button.addEventListener('click', () => {
+                    speakText(text);
+                });
+            }
         });
 
         textDiv.appendChild(actionButtonsDiv);
@@ -198,8 +219,6 @@ function appendMessage(sender, text, calcuText) {
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
-
-
 
 // 處理 VIEW 按鈕點擊事件
 function handleViewButtonClick(text, calcuText) {
