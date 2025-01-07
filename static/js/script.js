@@ -14,6 +14,7 @@ const thinkButton = document.getElementById('think-button');
 const modal = document.getElementById('codeModal');
 const closeModal = document.getElementsByClassName('close')[0];
 const codeContent = document.getElementById('codeContent');
+const codeResult = document.getElementById('codeResult');
 
 // 定義使用者圖示陣列
 const userIcons = [
@@ -96,19 +97,19 @@ function sendMessage() {
     .then(data => {
         if (data.response.startsWith('A8B4')) {
             result = String(eval(data.response.substring(5)));
-            appendMessage('bot', result);
+            appendMessage('bot', result, data.response.substring(5));
         } else {
-            appendMessage('bot', data.response);
+            appendMessage('bot', data.response, "");
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        appendMessage('bot', '抱歉，發生錯誤。');
+        appendMessage('bot', '抱歉，發生錯誤。', "");
     });
 }
 
 // 添加訊息函數
-function appendMessage(sender, text) {
+function appendMessage(sender, text, calcuText) {
     const messageDiv = document.createElement('div');
     messageDiv.className = sender;
 
@@ -183,7 +184,7 @@ function appendMessage(sender, text) {
             // 特別為 VIEW 按鈕添加點擊事件
             if (action.name === 'view' && sender === 'bot') {
                 button.addEventListener('click', () => {
-                    handleViewButtonClick(text);
+                    handleViewButtonClick(text, calcuText);
                 });
             }
         });
@@ -198,11 +199,14 @@ function appendMessage(sender, text) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+
+
 // 處理 VIEW 按鈕點擊事件
-function handleViewButtonClick(text) {
-    // 假設 eval() 是在這行執行的
-    const evalCode = "result = String(eval(data.response.substring(5)));";
+function handleViewButtonClick(text, calcuText) {
+    const evalCode = "result = String(eval(\"" + calcuText.trim() + "\"));";
+    const evalResult = text;
     codeContent.textContent = evalCode;
+    codeResult.textContent = evalResult;
 
     // 顯示模態窗口
     modal.style.display = "block";
