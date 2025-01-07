@@ -130,7 +130,6 @@ def chat():
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
 
-# 新增 redo 路由
 @app.route('/api/redo', methods=['POST'])
 def redo():
     data = request.get_json()
@@ -169,10 +168,7 @@ def redo():
     session['context_window'] = context_window
 
     # 取得需要重新生成的使用者訊息
-    if sender == 'user':
-        user_message = context_window[user_message_index]['content']
-    else:
-        user_message = context_window[user_message_index]['content']
+    user_message = context_window[user_message_index]['content']
 
     # 構建 prompt
     prompt = DEFAULT_PROMPT + "\n\nbackground:{"
@@ -217,7 +213,7 @@ def redo():
         return jsonify({'response': generated_text, 'index': new_bot_index})
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
-
+    
 @app.route('/api/clear', methods=['POST'])
 def clear():
     session.pop('context_window', None)

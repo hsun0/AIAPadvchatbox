@@ -254,6 +254,14 @@ function handleViewButtonClick(text, calcuText) {
 function redoMessage(sender, index, text) {
     index = parseInt(index, 10);
 
+    if (sender === 'bot') {
+        // 移除 Bot 訊息本身
+        const botMessage = chatWindow.querySelector(`[data-index="${index}"]`);
+        if (botMessage) {
+            chatWindow.removeChild(botMessage);
+        }
+    }
+
     // 移除所有 data-index 大於 index 的訊息
     const messages = chatWindow.querySelectorAll(`[data-index]`);
     messages.forEach(msg => {
