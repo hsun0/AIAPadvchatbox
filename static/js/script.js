@@ -104,6 +104,7 @@ function sendMessage() {
 // 添加訊息函數
 function appendMessage(sender, text, calcuText) {
     console.log(`Appending message: sender=${sender}, text="${text}", calcuText="${calcuText}"`);
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = sender;
     messageDiv.setAttribute('data-index', messageIndex); // 設定訊息索引
@@ -135,8 +136,9 @@ function appendMessage(sender, text, calcuText) {
     messageContentDiv.appendChild(textDiv);
 
     // 如果是使用者或機器人訊息，添加功能按鈕
+    let actionButtonsDiv;
     if (sender === 'user' || sender === 'bot') {
-        const actionButtonsDiv = document.createElement('div');
+        actionButtonsDiv = document.createElement('div');
         actionButtonsDiv.className = 'action-buttons';
 
         // 定義功能按鈕及其圖示
@@ -207,11 +209,16 @@ function appendMessage(sender, text, calcuText) {
                 });
             }
         });
-
-        messageContentDiv.appendChild(actionButtonsDiv);
     }
 
+    // Append messageContentDiv to messageDiv
     messageDiv.appendChild(messageContentDiv);
+    
+    // Append actionButtonsDiv after messageContentDiv if exists
+    if (actionButtonsDiv) {
+        messageDiv.appendChild(actionButtonsDiv);
+    }
+
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
