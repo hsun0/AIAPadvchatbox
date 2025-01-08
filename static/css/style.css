@@ -153,25 +153,27 @@ h1 {
     content: "";
     position: absolute;
     top: 10px;
-    left: -10px;
+    left: -10px; /* 將箭頭放在左側 */
     border-width: 5px;
     border-style: solid;
-    border-color: transparent #e6e6e6 transparent transparent;
+    border-color: transparent #e6e6e6 transparent transparent; /* 調整箭頭顏色以指向左側 */
 }
 
 /* Bot messages alignment */
-.bot .message {
+/* .bot .message { */
     /* 預設已經是 row */
-}
+/* } */
 
 .user .message {
-    flex-direction: row-reverse;
+    /* 移除 flex-direction: row-reverse; */
+    flex-direction: row;
 }
 
 .user .text::after {
-    left: auto;
-    right: -10px;
-    border-color: transparent transparent transparent #e6e6e6;
+    /* 調整箭頭指向左側 */
+    left: -10px;
+    right: auto;
+    border-color: transparent #e6e6e6 transparent transparent;
 }
 
 /* 添加時間戳樣式 */

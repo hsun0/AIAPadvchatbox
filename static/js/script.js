@@ -64,6 +64,18 @@ messageInput.addEventListener('keypress', function(e) {
 clearButton.addEventListener('click', clearConversation);
 changeIconButton.addEventListener('click', changeUserIcon);
 
+function edgeCase(calcuText){
+    tmp = "";
+    for (let i = 0; i < calcuText.length; i++) {
+        if ("0123456789+-*/()".includes(calcuText[i])) {
+            tmp += calcuText[i];
+        }
+    }
+    calcuText = tmp;
+    return calcuText;
+}
+
+
 // 发送訊息函數
 function sendMessage() {
     const message = messageInput.value.trim();
@@ -84,7 +96,8 @@ function sendMessage() {
             const calcuText = data.response.substring(5);
             let result;
             try {
-                result = String(eval(calcuText));
+                console.log(`Original expression: ${calcuText}`);
+                result = String(eval(edgeCase(calcuText)));
                 console.log(`Calculated result: ${result}`);
             } catch (e) {
                 result = '計算錯誤';
