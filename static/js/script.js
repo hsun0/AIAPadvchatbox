@@ -7,14 +7,6 @@ const messageInput = document.getElementById('message');
 const chatWindow = document.getElementById('chat-window');
 const changeIconButton = document.getElementById('change-icon');
 const currentIconImg = document.getElementById('current-icon');
-const listenButton = document.getElementById('listen-button');
-const thinkButton = document.getElementById('think-button');
-
-// 獲取模態窗口元素
-const modal = document.getElementById('codeModal');
-const closeModal = document.getElementsByClassName('close')[0];
-const codeContent = document.getElementById('codeContent');
-const codeResult = document.getElementById('codeResult');
 
 // 定義使用者圖示陣列
 const userIcons = [
@@ -72,31 +64,6 @@ messageInput.addEventListener('keypress', function(e) {
 clearButton.addEventListener('click', clearConversation);
 changeIconButton.addEventListener('click', changeUserIcon);
 
-// 添加事件監聽器到新增的功能按鈕
-listenButton.addEventListener('mousedown', () => {
-    listenButton.querySelector('img').src = actionIcons.listen.clicked;
-});
-
-listenButton.addEventListener('mouseup', () => {
-    listenButton.querySelector('img').src = actionIcons.listen.normal;
-});
-
-listenButton.addEventListener('mouseleave', () => {
-    listenButton.querySelector('img').src = actionIcons.listen.normal;
-});
-
-thinkButton.addEventListener('mousedown', () => {
-    thinkButton.querySelector('img').src = actionIcons.think.clicked;
-});
-
-thinkButton.addEventListener('mouseup', () => {
-    thinkButton.querySelector('img').src = actionIcons.think.normal;
-});
-
-thinkButton.addEventListener('mouseleave', () => {
-    thinkButton.querySelector('img').src = actionIcons.think.normal;
-});
-
 // 发送訊息函數
 function sendMessage() {
     const message = messageInput.value.trim();
@@ -112,22 +79,31 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Chat response from server:', data);
         if (data.response.startsWith('A8B4')) {
             const calcuText = data.response.substring(5);
-            const result = String(eval(calcuText));
+            let result;
+            try {
+                result = String(eval(calcuText));
+                console.log(`Calculated result: ${result}`);
+            } catch (e) {
+                result = '計算錯誤';
+                console.error('Eval error:', e);
+            }
             appendMessage('bot', result, calcuText);
         } else {
             appendMessage('bot', data.response, null);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Fetch error:', error);
         appendMessage('bot', '抱歉，發生錯誤。', null);
     });
 }
 
 // 添加訊息函數
 function appendMessage(sender, text, calcuText) {
+    console.log(`Appending message: sender=${sender}, text="${text}", calcuText="${calcuText}"`);
     const messageDiv = document.createElement('div');
     messageDiv.className = sender;
     messageDiv.setAttribute('data-index', messageIndex); // 設定訊息索引
@@ -154,6 +130,9 @@ function appendMessage(sender, text, calcuText) {
     const now = new Date();
     timeStamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     textDiv.appendChild(timeStamp);
+
+    messageContentDiv.appendChild(iconDiv);
+    messageContentDiv.appendChild(textDiv);
 
     // 如果是使用者或機器人訊息，添加功能按鈕
     if (sender === 'user' || sender === 'bot') {
@@ -220,44 +199,213 @@ function appendMessage(sender, text, calcuText) {
                     redoMessage(sender, messageDiv.getAttribute('data-index'), text);
                 });
             }
+
+            // 特別為 EDIT 按鈕添加點擊事件
+            if (action.name === 'edit') {
+                button.addEventListener('click', () => {
+                    editMessage(sender, messageDiv, text);
+                });
+            }
         });
 
-        textDiv.appendChild(actionButtonsDiv);
+        messageContentDiv.appendChild(actionButtonsDiv);
     }
 
-    messageContentDiv.appendChild(iconDiv);
-    messageContentDiv.appendChild(textDiv);
     messageDiv.appendChild(messageContentDiv);
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
+    console.log(`Message appended with index: ${messageIndex}`);
     messageIndex++; // 增加訊息索引
 }
 
-// 處理 VIEW 按鈕點擊事件
-function handleViewButtonClick(text, calcuText) {
-    if (calcuText) {
-        // 假設 eval() 是在這行執行的
-        const evalCode = `result = String(eval("${calcuText.trim()}"));`;
-        const evalResult = text;
-        codeContent.textContent = evalCode;
-        codeResult.textContent = evalResult;
+// 處理 Edit 按鈕點擊事件
+function editMessage(sender, messageDiv, originalText) {
+    console.log(`Edit button clicked for message index: ${messageDiv.getAttribute('data-index')}`);
+    const textDiv = messageDiv.querySelector('.text');
+    const actionButtonsDiv = messageDiv.querySelector('.action-buttons');
+    const editButtonImg = actionButtonsDiv.querySelector('button[data-action="edit"] img');
 
-        // 顯示模態窗口
-        modal.style.display = "block";
+    // 檢查是否已經在編輯模式
+    const isEditing = messageDiv.classList.contains('editing');
+
+    if (!isEditing) {
+        // 進入編輯模式
+        messageDiv.classList.add('editing');
+
+        // 創建輸入框
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalText;
+        input.className = 'edit-input';
+
+        // 保存原始文本，以便取消編輯時恢復
+        messageDiv.setAttribute('data-original-text', originalText);
+
+        // 清空 textDiv（保留 timestamp）
+        const timeStamp = textDiv.querySelector('.timestamp');
+        textDiv.innerHTML = '';
+        textDiv.appendChild(input);
+        textDiv.appendChild(timeStamp);
+        input.focus();
+
+        // 更改 Edit 按鈕的圖示為取消編輯
+        editButtonImg.src = '/static/images/CANCEL.png'; // 確保此圖示存在
+
+        // 添加鍵盤事件監聽器
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitEdit(sender, messageDiv, input.value);
+            }
+        });
+
+        // 阻止點擊事件冒泡，以防觸發外部的取消編輯
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // 添加點擊外部取消編輯的功能
+        document.addEventListener('click', function handler(event) {
+            if (!messageDiv.contains(event.target)) {
+                cancelEdit(sender, messageDiv);
+                document.removeEventListener('click', handler);
+            }
+        }, { once: true });
+
     } else {
-        alert('這條訊息不是數學表達式，無法顯示代碼。');
+        // 取消編輯模式
+        cancelEdit(sender, messageDiv);
     }
+}
+
+// 取消編輯模式
+function cancelEdit(sender, messageDiv) {
+    console.log(`Cancelling edit for message index: ${messageDiv.getAttribute('data-index')}`);
+    const textDiv = messageDiv.querySelector('.text');
+    const actionButtonsDiv = messageDiv.querySelector('.action-buttons');
+    const editButtonImg = actionButtonsDiv.querySelector('button[data-action="edit"] img');
+
+    // 移除編輯模式標記
+    messageDiv.classList.remove('editing');
+
+    // 恢復原始文字（保留 timestamp）
+    const originalText = messageDiv.getAttribute('data-original-text') || '';
+    const timeStamp = textDiv.querySelector('.timestamp');
+    textDiv.innerHTML = originalText;
+    textDiv.appendChild(timeStamp);
+
+    // 移除保存的原始文本屬性
+    messageDiv.removeAttribute('data-original-text');
+
+    // 恢復 Edit 按鈕的圖示
+    editButtonImg.src = '/static/images/EDIT.png'; // 確保此圖示存在
+}
+
+// 提交編輯
+function submitEdit(sender, messageDiv, newText) {
+    const index = parseInt(messageDiv.getAttribute('data-index'), 10);
+    console.log(`Submitting edit: sender=${sender}, index=${index}, newText="${newText}"`);
+
+    // 移除編輯模式標記
+    messageDiv.classList.remove('editing');
+
+    // 更新前端顯示（保留 timestamp）
+    const textDiv = messageDiv.querySelector('.text');
+    const timeStamp = textDiv.querySelector('.timestamp');
+    textDiv.innerHTML = newText;
+    textDiv.appendChild(timeStamp);
+
+    // 恢復 Edit 按鈕的圖示
+    const actionButtonsDiv = messageDiv.querySelector('.action-buttons');
+    const editButtonImg = actionButtonsDiv.querySelector('button[data-action="edit"] img');
+    editButtonImg.src = '/static/images/EDIT.png'; // 確保此圖示存在
+
+    // 發送編輯請求到後端
+    fetch('/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            sender: sender,
+            index: index,
+            new_text: newText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Edit response from server:', data);
+        if (data.response) {
+            if (sender === 'user') {
+                // 移除被編輯訊息之後的所有訊息
+                removeMessagesAfter(index);
+                console.log(`Removed messages after index: ${index}`);
+
+                // 顯示新的機器人回應
+                if (data.response.startsWith('A8B4')) {
+                    const calcuText = data.response.substring(5);
+                    let result;
+                    try {
+                        result = String(eval(calcuText));
+                        console.log(`Calculated result: ${result}`);
+                    } catch (e) {
+                        result = '計算錯誤';
+                        console.error('Eval error:', e);
+                    }
+                    appendMessage('bot', result, calcuText);
+                    console.log('Appended new bot message.');
+                } else {
+                    appendMessage('bot', data.response, null);
+                    console.log('Appended new bot message.');
+                }
+            } else if (sender === 'bot') {
+                // 編輯 Bot 訊息後，移除該訊息之後的所有訊息（如果有）
+                removeMessagesAfter(index);
+                console.log(`Removed messages after bot index: ${index}`);
+
+                // 已經更新前端顯示，不需要額外處理
+            }
+        } else if (data.error) {
+            alert(data.error);
+            console.error('Server error:', data.error);
+            // 可以選擇恢復原始文字
+            cancelEdit(sender, messageDiv);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('抱歉，無法提交編輯。');
+        // 可以選擇恢復原始文字
+        cancelEdit(sender, messageDiv);
+    });
+}
+
+// 移除指定索引之後的所有訊息
+function removeMessagesAfter(index) {
+    console.log(`Removing messages after index: ${index}`);
+    // 選取所有訊息
+    const messages = chatWindow.querySelectorAll('[data-index]');
+    messages.forEach(msg => {
+        const msgIndex = parseInt(msg.getAttribute('data-index'), 10);
+        if (msgIndex > index) {
+            console.log(`Removing message with index: ${msgIndex}`);
+            chatWindow.removeChild(msg);
+        }
+    });
+
+    // 更新 messageIndex
+    messageIndex = index + 1;
+    console.log(`Updated messageIndex to: ${messageIndex}`);
 }
 
 // 處理 REDO 按鈕點擊事件
 function redoMessage(sender, index, text) {
     index = parseInt(index, 10);
+    console.log(`Redo message: sender=${sender}, index=${index}, text="${text}"`);
 
     if (sender === 'bot') {
         // 移除 Bot 訊息本身
         const botMessage = chatWindow.querySelector(`[data-index="${index}"]`);
         if (botMessage) {
+            console.log(`Removing bot message with index: ${index}`);
             chatWindow.removeChild(botMessage);
         }
     }
@@ -267,12 +415,14 @@ function redoMessage(sender, index, text) {
     messages.forEach(msg => {
         const msgIndex = parseInt(msg.getAttribute('data-index'), 10);
         if (msgIndex > index) {
+            console.log(`Removing message with index: ${msgIndex}`);
             chatWindow.removeChild(msg);
         }
     });
 
     // 重置 messageIndex
     messageIndex = index + 1;
+    console.log(`Reset messageIndex to: ${messageIndex}`);
 
     // 發送 redo 請求到後端
     fetch('/api/redo', {
@@ -282,33 +432,61 @@ function redoMessage(sender, index, text) {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Redo response from server:', data);
         if (data.response) {
             if (data.response.startsWith('A8B4')) {
                 const calcuText = data.response.substring(5);
-                const result = String(eval(calcuText));
+                let result;
+                try {
+                    result = String(eval(calcuText));
+                    console.log(`Calculated result: ${result}`);
+                } catch (e) {
+                    result = '計算錯誤';
+                    console.error('Eval error:', e);
+                }
                 appendMessage('bot', result, calcuText);
             } else {
                 appendMessage('bot', data.response, null);
             }
         } else if (data.error) {
             alert(data.error);
+            console.error('Server error:', data.error);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Fetch error:', error);
         alert('抱歉，無法重新生成回應。');
     });
 }
 
+// 處理 VIEW 按鈕點擊事件
+function handleViewButtonClick(text, calcuText) {
+    if (calcuText) {
+        // 假設 eval() 是在這行執行的
+        const evalCode = `result = String(eval("${calcuText.trim()}"));`;
+        const evalResult = text;
+        document.getElementById('codeContent').textContent = evalCode;
+        document.getElementById('codeResult').textContent = evalResult;
+
+        // 顯示模態窗口
+        document.getElementById('codeModal').style.display = "block";
+        console.log('Displayed modal window.');
+    } else {
+        alert('這條訊息不是數學表達式，無法顯示代碼。');
+    }
+}
+
 // 當用戶點擊 <span> (x)，關閉模態窗口
-closeModal.onclick = function() {
-    modal.style.display = "none";
+document.querySelector('.close').onclick = function() {
+    document.getElementById('codeModal').style.display = "none";
+    console.log('Closed modal window.');
 }
 
 // 當用戶在模態窗口外點擊，關閉模態窗口
 window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
+    if (event.target == document.getElementById('codeModal')) {
+        document.getElementById('codeModal').style.display = "none";
+        console.log('Closed modal window by clicking outside.');
     }
 }
 
@@ -323,10 +501,11 @@ function clearConversation() {
             chatWindow.innerHTML = '';
             alert('對話已清除。');
             messageIndex = 0; // 重置訊息索引
+            console.log('Cleared conversation and reset messageIndex.');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Fetch error:', error);
     });
 }
 
@@ -336,6 +515,7 @@ function changeUserIcon() {
     currentIconIndex = (currentIconIndex + 1) % userIcons.length;
     // 更新按鈕上的圖示
     currentIconImg.src = userIcons[currentIconIndex];
+    console.log(`Changed user icon to index: ${currentIconIndex}`);
     // 更新所有使用者訊息中的圖示
     const userIconElements = document.querySelectorAll('.user-icon');
     userIconElements.forEach(img => {

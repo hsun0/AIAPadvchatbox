@@ -40,7 +40,7 @@ DEFAULT_PROMPT = (
 )
 
 def blur(text):
-    if(text[0:2] == "A8"):
+    if(text[0:4] == "A8B4"):
         text = "A8B4: " + text[5:]
     else:
         return text
@@ -87,12 +87,11 @@ def chat():
             prompt += f"Bot: {exchange['content']}\n"
     prompt += "}\n"
     prompt += "Current user:" + user_message + "\n"
+    prompt += "Bot:"
 
     # 將用戶訊息加入 context_window
     context_window.append({'role': 'user', 'content': user_message})
 
-    # 添加當前用戶訊息
-    prompt += "Bot:"
     print("prompt:", prompt)
 
     headers = {
@@ -130,6 +129,7 @@ def chat():
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
 
+# 新增 redo 路由
 @app.route('/api/redo', methods=['POST'])
 def redo():
     data = request.get_json()
@@ -213,7 +213,94 @@ def redo():
         return jsonify({'response': generated_text, 'index': new_bot_index})
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
-    
+
+# 新增 edit 路由
+@app.route('/api/edit', methods=['POST'])
+def edit():
+    data = request.get_json()
+    sender = data.get('sender')  # 'user' 或 'bot'
+    index = data.get('index')    # 整數，對應 context_window 的索引
+    new_text = data.get('new_text')  # 編輯後的文字
+
+    if sender not in ['user', 'bot'] or index is None or new_text is None:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    context_window = session.get('context_window', [])
+
+    if sender == 'user':
+        # 確認該索引對應的訊息是 User 的訊息
+        if index >= len(context_window) or context_window[index]['role'] != 'user':
+            return jsonify({'error': 'Invalid user message index'}), 400
+
+        # 截斷 context_window，移除 redo 訊息之後的所有內容
+        context_window = context_window[:index + 1]
+
+        # 替換 User 訊息為編輯後的內容
+        context_window[index]['content'] = new_text
+
+        # 將編輯後的 User 訊息發送到後端以生成新的 Bot 回應
+        user_message = new_text
+
+        # 構建 prompt
+        prompt = DEFAULT_PROMPT + "\n\nbackground:{"
+        for exchange in context_window:
+            if exchange['role'] == 'user':
+                prompt += f"User: {exchange['content']}\n"
+            elif exchange['role'] == 'bot':
+                prompt += f"Bot: {exchange['content']}\n"
+        prompt += "}\n"
+        prompt += "Current user:" + user_message + "\n"
+        prompt += "Bot:"
+
+        headers = {
+            'Authorization': f'Bearer {COHERE_API_KEY}',
+            'Content-Type': 'application/json',
+        }
+
+        payload = {
+            'model': 'command-r-plus-08-2024',
+            'prompt': prompt,
+            'max_tokens': 150,
+            'temperature': 0.7,
+        }
+
+        response = requests.post(COHERE_API_URL, headers=headers, json=payload)
+
+        if response.status_code == 200:
+            generated_text = response.json()['generations'][0]['text'].strip()
+            generated_text = blur(generated_text)
+            print("edit_generated_text:", generated_text)
+            
+            # 將新的 Bot 回應加入 context_window
+            context_window.append({'role': 'bot', 'content': generated_text})
+
+            # 限制 context_window 的大小
+            if len(context_window) > MAX_CONTEXT * 2:
+                context_window = context_window[-MAX_CONTEXT * 2:]
+            session['context_window'] = context_window
+
+            # 返回新的 Bot 回應和其在 context_window 中的索引
+            new_bot_index = len(context_window) - 1
+            return jsonify({'response': generated_text, 'index': new_bot_index})
+        else:
+            return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
+
+    elif sender == 'bot':
+        # 確認該索引對應的訊息是 Bot 的訊息
+        if index >= len(context_window) or context_window[index]['role'] != 'bot':
+            return jsonify({'error': 'Invalid bot message index'}), 400
+
+        # 截斷 context_window，移除該 Bot 訊息及其後的所有內容
+        context_window = context_window[:index]
+
+        # 將編輯後的 Bot 訊息新增到 context_window
+        context_window.append({'role': 'bot', 'content': new_text})
+
+        # 更新 session
+        session['context_window'] = context_window
+
+        return jsonify({'response': new_text, 'index': len(context_window)-1})
+
 @app.route('/api/clear', methods=['POST'])
 def clear():
     session.pop('context_window', None)
