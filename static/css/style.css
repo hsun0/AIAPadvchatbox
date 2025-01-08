@@ -294,3 +294,22 @@ h1 {
     height: 100%;
     border-radius: 3px; /* 圓角 */
 }
+
+#think-button:disabled img {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 新增：正在使用 THINK 功能時的視覺反饋 */
+.listening-input .text {
+    border: 2px solid #2196F3;
+    background-color: #e0f7fa;
+}
+
+.listening-input::after {
+    content: '🔍 正在分析...';
+    display: block;
+    font-size: 12px;
+    color: #2196F3;
+    margin-top: 5px;
+}

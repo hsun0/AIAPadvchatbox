@@ -1,6 +1,8 @@
 # app.py
 import os
 import shutil
+import json
+import concurrent.futures
 from flask import Flask, request, jsonify, render_template, session
 from API_KEY import KEY
 import requests
@@ -110,11 +112,11 @@ def chat():
 
     if response.status_code == 200:
         generated_text = response.json()['generations'][0]['text'].strip()
+        print("user:", user_message)
         print("preblurgenerated_text:", generated_text)
         generated_text = blur(generated_text)
         print("generated_text:", generated_text)
         
-        # 將機器人回覆加入 context_window（不使用 eval，保留在前端處理）
         context_window.append({'role': 'bot', 'content': generated_text})
 
         # 限制 context_window 的大小
@@ -305,6 +307,103 @@ def edit():
 def clear():
     session.pop('context_window', None)
     return jsonify({'status': 'success'})
+
+# 新增 think 路由
+@app.route('/api/think', methods=['POST'])
+def think():
+    data = request.get_json()
+    user_message = data.get('message')
+
+    if not user_message:
+        return jsonify({'error': 'No message provided.'}), 400
+
+    # Step 1: 將訊息分成三個部分
+    split_prompt = (
+        "Please split the following message into three parts, do not answer the question, separate each part with a semicolon (;).\n"
+        f"Message: {user_message}\n"
+        "Split into three parts:"
+    )
+
+    headers = {
+        'Authorization': f'Bearer {COHERE_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+
+    split_payload = {
+        'model': 'command-r-plus-08-2024',  # 請根據您的模型選擇
+        'prompt': split_prompt,
+        'max_tokens': 100,
+        'temperature': 0.5,
+    }
+
+    split_response = requests.post(COHERE_API_URL, headers=headers, json=split_payload)
+
+    if split_response.status_code != 200:
+        return jsonify({'error': 'Failed to split message.'}), 500
+
+    split_text = split_response.json()['generations'][0]['text'].strip()
+    parts = [part.strip() for part in split_text.split(';') if part.strip()]
+
+    while len(parts) < 3:
+        parts.append(parts[-1])
+
+    for i in range(3):
+        if len(parts[i]) < 4:
+            parts[i] = user_message
+
+    # Step 2: 使用 ThreadPoolExecutor 同時發送三個請求到 /api/chat
+    def send_chat_request(part):
+        chat_payload = {
+            'message': part
+        }
+        chat_response = requests.post('http://localhost:8888/api/chat', headers={'Content-Type': 'application/json'}, data=json.dumps(chat_payload))
+        if chat_response.status_code == 200:
+            chat_data = chat_response.json()
+            return chat_data.get('response', '')
+        else:
+            return '抱歉，無法處理這部分的請求。'
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(send_chat_request, part) for part in parts[:3]]
+        responses = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+    # Step 3: 將三個回應合成一個最終答案
+    synthesis_prompt = (
+        "請將以下三個回應合成一個連貫且全面的回答。\n"
+        f"回應1：{responses[0]}\n"
+        f"回應2：{responses[1]}\n"
+        f"回應3：{responses[2]}\n"
+        "合成的回答："
+    )
+
+    synthesis_payload = {
+        'model': 'command-r-plus-08-2024',  # 請根據您的模型選擇
+        'prompt': synthesis_prompt,
+        'max_tokens': 150,
+        'temperature': 0.7,
+    }
+
+    synthesis_response = requests.post(COHERE_API_URL, headers=headers, json=synthesis_payload)
+
+    if synthesis_response.status_code != 200:
+        return jsonify({'error': 'Failed to synthesize responses.'}), 500
+
+    synthesized_text = synthesis_response.json()['generations'][0]['text'].strip()
+
+    # Step 4: 將原始訊息和合成的回答新增到 context_window
+    if 'context_window' not in session:
+        session['context_window'] = []
+
+    context_window = session['context_window']
+    context_window.append({'role': 'user', 'content': user_message})
+    context_window.append({'role': 'bot', 'content': synthesized_text})
+
+    # 限制 context_window 的大小
+    if len(context_window) > MAX_CONTEXT * 2:
+        context_window = context_window[-MAX_CONTEXT * 2:]
+    session['context_window'] = context_window
+
+    return jsonify({'response': synthesized_text, 'index': len(context_window)-1})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8888)

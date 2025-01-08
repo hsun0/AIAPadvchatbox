@@ -702,3 +702,59 @@ recognition.onresult = (event) => {
         messageInput.focus();
     }
 };
+
+// 獲取 THINK 按鈕
+const thinkButton = document.getElementById('think-button');
+
+// 為 THINK 按鈕添加事件監聽器
+if (thinkButton) {
+    thinkButton.addEventListener('click', thinkHandler);
+}
+
+// 定義 THINK 按鈕的處理函數
+function thinkHandler() {
+    const message = messageInput.value.trim();
+    if (message === '') {
+        alert('請輸入您的訊息後再使用 THINK 功能。');
+        return;
+    }
+
+    // 禁用按鈕以防止重複點擊
+    thinkButton.disabled = true;
+    thinkButton.querySelector('img').src = '/static/images/THINKclicked.png'; // 更換圖示表示正在處理
+
+    // 移除輸入框中的訊息並新增到 context_window
+    appendMessage('user', message, null);
+    messageInput.value = '';
+
+    // 添加正在思考的樣式到輸入區域
+    const inputArea = document.getElementById('input-area');
+    inputArea.classList.add('thinking');
+
+    // 發送 POST 請求到 /api/think
+    fetch('/api/think', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response) {
+            appendMessage('bot', data.response, null);
+        } else if (data.error) {
+            alert(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('抱歉，發生錯誤。');
+    })
+    .finally(() => {
+        // 恢復按鈕狀態
+        thinkButton.disabled = false;
+        thinkButton.querySelector('img').src = '/static/images/THINK.png'; // 恢復原圖示
+
+        // 移除正在思考的樣式
+        inputArea.classList.remove('thinking');
+    });
+}
