@@ -160,9 +160,9 @@ h1 {
 }
 
 /* Bot messages alignment */
-/* .bot .message { */
+.bot .message {
     /* 預設已經是 row */
-/* } */
+}
 
 .user .message {
     /* 移除 flex-direction: row-reverse; */
@@ -212,6 +212,20 @@ h1 {
 .small-action-button:active img {
     transform: scale(0.95);
     transition: transform 0.1s;
+}
+
+/* 新增正在聆聽的樣式 */
+.listening .text {
+    border: 2px solid #4CAF50;
+    background-color: #e0ffe0;
+}
+
+.listening::after {
+    content: '🔊 正在聆聽...';
+    display: block;
+    font-size: 12px;
+    color: #4CAF50;
+    margin-top: 5px;
 }
 
 .modal {

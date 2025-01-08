@@ -42,6 +42,71 @@ function speakText(text) {
     }
 }
 
+// 初始化 SpeechRecognition
+let recognition;
+let isListening = false;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-TW'; // 設置語言為繁體中文
+    recognition.interimResults = false; // 只獲取最終結果
+    recognition.maxAlternatives = 1; // 只獲取一個結果
+
+    // 當語音識別開始
+    recognition.onstart = () => {
+        isListening = true;
+        console.log('Speech recognition started.');
+        // 添加正在聆聽的樣式
+        const editingMessageDiv = chatWindow.querySelector('.editing');
+        if (editingMessageDiv) {
+            editingMessageDiv.classList.add('listening');
+        }
+    };
+
+    // 當語音識別結束
+    recognition.onend = () => {
+        isListening = false;
+        console.log('Speech recognition ended.');
+        // 移除正在聆聽的樣式
+        const editingMessageDiv = chatWindow.querySelector('.editing');
+        if (editingMessageDiv) {
+            editingMessageDiv.classList.remove('listening');
+        }
+    };
+
+    // 當有識別結果時
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        console.log(`Speech recognition result: ${transcript}`);
+
+        // 將識別出的文字插入到編輯輸入框
+        const editingMessageDiv = chatWindow.querySelector('.editing');
+        if (editingMessageDiv) {
+            const input = editingMessageDiv.querySelector('.edit-input');
+            if (input) {
+                input.value = transcript;
+                // 不自動提交編輯，允許使用者進一步修改
+                // 可以選擇在此處提供提示，讓使用者知道可以進行修改後提交
+            }
+        }
+    };
+
+    // 當發生錯誤時
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        alert('語音識別發生錯誤：' + event.error);
+        isListening = false;
+        // 移除正在聆聽的樣式
+        const editingMessageDiv = chatWindow.querySelector('.editing');
+        if (editingMessageDiv) {
+            editingMessageDiv.classList.remove('listening');
+        }
+    };
+} else {
+    console.warn('SpeechRecognition API is not supported in this browser.');
+}
+
 // 初始化訊息索引
 let messageIndex = 0;
 
@@ -213,6 +278,33 @@ function appendMessage(sender, text, calcuText) {
             if (action.name === 'edit') {
                 button.addEventListener('click', () => {
                     editMessage(sender, messageDiv, text);
+                });
+            }
+
+            // 特別為 LISTEN 按鈕添加點擊事件
+            if (action.name === 'listen') {
+                button.addEventListener('click', () => {
+                    const editingMessageDiv = chatWindow.querySelector('.editing');
+                    if (editingMessageDiv) {
+                        // 如果已在編輯模式，開始語音識別
+                        if (recognition && !isListening) {
+                            recognition.start();
+                        }
+                    } else {
+                        // 如果未在編輯模式，切換到編輯模式並開始語音識別
+                        // 假設您希望點擊 LISTEN 按鈕時自動進入編輯模式
+                        const actionButtons = messageDiv.querySelector('.action-buttons');
+                        const editButton = actionButtons.querySelector('button[data-action="edit"]');
+                        if (editButton) {
+                            editButton.click(); // 進入編輯模式
+                            // 等待一點時間以確保編輯模式已啟動
+                            setTimeout(() => {
+                                if (recognition && !isListening) {
+                                    recognition.start();
+                                }
+                            }, 100);
+                        }
+                    }
                 });
             }
         });
