@@ -8,6 +8,9 @@ const chatWindow = document.getElementById('chat-window');
 const changeIconButton = document.getElementById('change-icon');
 const currentIconImg = document.getElementById('current-icon');
 
+// 新增：獲取 LISTEN 輸入按鈕
+const listenInputButton = document.getElementById('listen-input-button');
+
 // 定義使用者圖示陣列
 const userIcons = [
     '/static/images/iconE.png',
@@ -46,8 +49,11 @@ function speakText(text) {
 let recognition;
 let isListening = false;
 
+// 初始化兩個語音識別實例：一個用於聊天訊息的 LISTEN 按鈕，一個用於輸入欄位的 LISTEN 按鈕
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    // 語音識別實例用於聊天訊息的 LISTEN 按鈕
     recognition = new SpeechRecognition();
     recognition.lang = 'zh-TW'; // 設置語言為繁體中文
     recognition.interimResults = false; // 只獲取最終結果
@@ -128,6 +134,20 @@ messageInput.addEventListener('keypress', function(e) {
 });
 clearButton.addEventListener('click', clearConversation);
 changeIconButton.addEventListener('click', changeUserIcon);
+
+// 新增：為 LISTEN 輸入按鈕添加事件監聽器
+if (listenInputButton) {
+    listenInputButton.addEventListener('click', () => {
+        if (recognition && !isListening) {
+            // 清空輸入框
+            messageInput.value = '';
+            // 啟動語音識別
+            recognition.start();
+            // 添加正在聆聽的樣式到輸入區域
+            document.getElementById('input-area').classList.add('listening-input');
+        }
+    });
+}
 
 // 发送訊息函數
 function sendMessage() {
@@ -630,3 +650,55 @@ function changeUserIcon() {
     // 儲存當前圖示索引到 localStorage
     localStorage.setItem('currentIconIndex', currentIconIndex);
 }
+
+// 新增：處理輸入欄位的語音識別結果
+// 因為我們有兩個不同的 LISTEN 按鈕，這裡將簡化為僅使用一個語音識別實例
+// 如果需要區分不同的按鈕，可以考慮使用不同的識別實例
+
+// 為輸入欄位的 LISTEN 按鈕添加事件處理器
+if (listenInputButton) {
+    listenInputButton.addEventListener('click', () => {
+        if (recognition && !isListening) {
+            // 清空輸入框
+            messageInput.value = '';
+            // 啟動語音識別
+            recognition.start();
+            // 添加正在聆聽的樣式到輸入區域
+            document.getElementById('input-area').classList.add('listening-input');
+        }
+    });
+}
+
+// 修改語音識別結束時，移除輸入區域的聆聽樣式
+recognition.onend = () => {
+    isListening = false;
+    console.log('Speech recognition ended.');
+    // 移除正在聆聽的樣式
+    const editingMessageDiv = chatWindow.querySelector('.editing');
+    if (editingMessageDiv) {
+        editingMessageDiv.classList.remove('listening');
+    }
+    // 移除輸入區域的聆聽樣式
+    document.getElementById('input-area').classList.remove('listening-input');
+};
+
+// 修改語音識別結果處理，將文字填入輸入框
+recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    console.log(`Speech recognition result: ${transcript}`);
+
+    // 將識別出的文字插入到編輯輸入框（如果在編輯模式下）
+    const editingMessageDiv = chatWindow.querySelector('.editing');
+    if (editingMessageDiv) {
+        const input = editingMessageDiv.querySelector('.edit-input');
+        if (input) {
+            input.value = transcript;
+            // 不自動提交編輯，允許使用者進一步修改
+        }
+    } else {
+        // 如果不是在編輯模式，將文字填入輸入框
+        messageInput.value = transcript;
+        // 可以選擇自動聚焦輸入框，讓使用者立即可以修改
+        messageInput.focus();
+    }
+};
