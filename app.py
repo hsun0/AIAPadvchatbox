@@ -327,12 +327,12 @@ def think():
 
     # Step 1: 將訊息分成三個部分
     split_prompt = (
-        "Please split the following message into three logically independent parts, separated by semicolons (;).\n"
+        "Please tell me this message in three different sentences, separated by semicolons (;).\n"
         f"Message: {user_message}\n"
         "Split into three parts:"
     )
 
-    view_prompt += f"""1. : {split_prompt}\n"""
+    view_prompt += f"""First : {split_prompt}\n"""
 
     headers = {
         'Authorization': f'Bearer {COHERE_API_KEY}',
@@ -348,7 +348,7 @@ def think():
 
     steps.append('Step 2: Sending split request to Cohere API')
     split_response = requests.post(COHERE_API_URL, headers=headers, json=split_payload)
-    view_response += f"""1. : {split_response.json()['generations'][0]['text'].strip()}\n"""
+    view_response += f"""First : {split_response.json()['generations'][0]['text'].strip()}\n"""
 
     if split_response.status_code != 200:
         steps.append('Step 2: Cohere API split request failed.')
@@ -365,9 +365,9 @@ def think():
         if len(parts[i]) < 4:
             parts[i] = user_message
     
-    view_prompt += f"""2. : {parts[0]}\n"""
-    view_prompt += f"""3. : {parts[1]}\n"""
-    view_prompt += f"""4. : {parts[2]}\n"""
+    view_prompt += f"""Second : {parts[0]}\n"""
+    view_prompt += f"""Third : {parts[1]}\n"""
+    view_prompt += f"""Fourth : {parts[2]}\n"""
 
     steps.append(f'Step 2: Cohere API split result: {parts}')
 
@@ -394,10 +394,16 @@ def think():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(send_chat_request, part) for part in parts[:3]]
         responses = [future.result() for future in concurrent.futures.as_completed(futures)]
+    
+    for i in range(3):
+        if is_math_expression(responses[i]):
+            responses[i] = eval(blur(responses[i])[5:])
+            print(responses[i])
+    print(responses)
 
-    view_response += f"""2. : {responses[0]}\n"""
-    view_response += f"""3. : {responses[1]}\n"""
-    view_response += f"""4. : {responses[2]}\n"""
+    view_response += f"""Second : {responses[0]}\n"""
+    view_response += f"""Third : {responses[1]}\n"""
+    view_response += f"""fourth : {responses[2]}\n"""
 
     steps.append(f'Step 3: Responses from the three parts: {responses}')
 
@@ -410,7 +416,7 @@ def think():
         "Synthesized answer:"
     )
 
-    view_prompt += f"""5. : {synthesis_prompt}\n"""
+    view_prompt += f"""Fifth : {synthesis_prompt}\n"""
 
     synthesis_payload = {
         'model': 'command-xlarge-nightly',  # 請根據您的模型選擇
@@ -444,7 +450,7 @@ def think():
 
     steps.append('Step 5: Adding user message and synthesized response to context_window')
 
-    view_response += f"""5. : {synthesized_text}\n"""
+    view_response += f"""Fifth : {synthesized_text}\n"""
 
     # 回傳 synthesized_text、steps、index 和 prompt
     print("synthesized_text:", synthesized_text)
