@@ -388,7 +388,7 @@ function appendMessage(sender, text, prompt, spetext = null) {
             }
 
             // 特別為 REDO 按鈕添加點擊事件
-            if (action.name === 'redo') {
+            if (action.name === 'redo' || action.name === 'think') {
                 button.addEventListener('click', () => {
                     if (messageDiv.classList.contains('editing')) {
                         const input = messageDiv.querySelector('.edit-input');
