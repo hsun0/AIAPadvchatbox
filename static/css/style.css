@@ -159,11 +159,6 @@ h1 {
     border-color: transparent #e6e6e6 transparent transparent; /* 調整箭頭顏色以指向左側 */
 }
 
-/* Bot messages alignment */
-.bot .message {
-    /* 預設已經是 row */
-}
-
 .user .message {
     /* 移除 flex-direction: row-reverse; */
     flex-direction: row;
