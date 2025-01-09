@@ -212,7 +212,7 @@ def redo():
 
         # 返回新生成的回應和其在 context_window 中的索引
         new_bot_index = len(context_window) - 1
-        return jsonify({'response': generated_text, 'index': new_bot_index})
+        return jsonify({'response': generated_text, 'index': new_bot_index, 'prompt': prompt})
     else:
         return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
 
@@ -283,7 +283,7 @@ def edit():
 
             # 返回新的 Bot 回應和其在 context_window 中的索引
             new_bot_index = len(context_window) - 1
-            return jsonify({'response': generated_text, 'index': new_bot_index})
+            return jsonify({'response': generated_text, 'index': new_bot_index, 'prompt': prompt})
         else:
             return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
 

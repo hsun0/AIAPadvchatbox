@@ -603,10 +603,10 @@ function submitEdit(sender, messageDiv, newText) {
                         result = '計算錯誤';
                         console.error('Eval error:', e);
                     }
-                    appendMessage('bot', result, calcuText);
+                    appendMessage('bot', result, data.prompt);
                     console.log('Appended new bot message.');
                 } else {
-                    appendMessage('bot', data.response, null);
+                    appendMessage('bot', data.response, data.prompt);
                     console.log('Appended new bot message.');
                 }
             } else if (sender === 'bot') {
@@ -697,9 +697,9 @@ function redoMessage(sender, index, text) {
                     result = '計算錯誤';
                     console.error('Eval error:', e);
                 }
-                appendMessage('bot', result, calcuText);
+                appendMessage('bot', result, data.prompt);
             } else {
-                appendMessage('bot', data.response, null);
+                appendMessage('bot', data.response, data.prompt);
             }
             console.log('Redo: 新的機器人回應已顯示');
         } else if (data.error) {
