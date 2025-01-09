@@ -496,7 +496,7 @@ function editMessage(sender, messageDiv, originalText) {
         console.log(`Message index ${messageDiv.getAttribute('data-index')} 已創建編輯輸入框`);
 
         // 更改 Edit 按鈕的圖示為取消編輯
-        editButtonImg.src = '/static/images/CANCEL.png'; // 確保此圖示存在
+        // editButtonImg.src = '/static/images/EDIT.png'; // 確保此圖示存在
 
         // 添加鍵盤事件監聽器
         input.addEventListener('keypress', function(e) {
