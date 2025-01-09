@@ -129,7 +129,7 @@ def chat():
 
         return jsonify({'response': generated_text, 'index': len(context_window)-1, 'prompt': prompt})
     else:
-         jsonify({'response': 'Sorry, I cannot process your request.', 'prompt': prompt}), 500
+        return jsonify({'response': 'Sorry, I cannot process your request.', 'prompt': prompt}), 500
 
 # 新增 redo 路由
 @app.route('/api/redo', methods=['POST'])
