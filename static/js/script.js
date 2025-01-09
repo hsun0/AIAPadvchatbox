@@ -37,12 +37,12 @@ function speakText(text) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         // 可選：設置語言、語調等屬性
-        utterance.lang = 'zh-TW'; // 根據需要設置語言
+        utterance.lang = 'en-US'; // 根據需要設置語言
         utterance.pitch = 1;
         utterance.rate = 1;
         speechSynthesis.speak(utterance);
     } else {
-        alert('抱歉，您的瀏覽器不支持語音合成功能。');
+        alert('Sorry, your browser does not support speech synthesis.');
     }
 }
 
@@ -55,7 +55,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     recognition = new SpeechRecognition();
-    recognition.lang = 'zh-TW'; // 設置語言為繁體中文
+    recognition.lang = 'en-US'; // 設置語言為英文
     recognition.interimResults = false; // 只獲取最終結果
     recognition.maxAlternatives = 1; // 只獲取一個結果
 
@@ -109,7 +109,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     // 當發生錯誤時
     recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        alert('語音識別發生錯誤：' + event.error);
+        alert('Speech recognition error: ' + event.error);
         isListening = false;
         // 移除正在聆聽的樣式
         const editingMessageDiv = chatWindow.querySelector('.editing');
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (storedIndex !== null && !isNaN(storedIndex)) {
         currentIconIndex = parseInt(storedIndex, 10);
         currentIconImg.src = userIcons[currentIconIndex];
-        console.log(`頁面加載: 使用者圖示索引設為 ${currentIconIndex}`);
+        console.log(`Page loaded: User icon index set to ${currentIconIndex}`);
     }
 });
 
@@ -152,12 +152,12 @@ if (listenInputButton) {
         if (recognition && !isListening) {
             // 清空輸入框
             messageInput.value = '';
-            console.log('LISTEN: 清空輸入框');
+            console.log('LISTEN: Cleared input field');
             // 啟動語音識別
             recognition.start();
             // 添加正在聆聽的樣式到輸入區域
             document.getElementById('input-area').classList.add('listening-input');
-            console.log('LISTEN: 啟動語音識別並添加聆聽樣式');
+            console.log('LISTEN: Started speech recognition and added listening style');
         }
     });
 }
@@ -171,30 +171,30 @@ if (thinkButton) {
 function thinkHandler() {
     const message = messageInput.value.trim();
     if (message === '') {
-        alert('請輸入您的訊息後再使用 THINK 功能。');
+        alert('Please enter your message before using the THINK function.');
         return;
     }
 
     // Step 1: 發送訊息到 /api/think
-    console.log('THINK Step 1: 發送訊息到 /api/think');
+    console.log('THINK Step 1: Sending message to /api/think');
     
     // 禁用按鈕以防止重複點擊
     thinkButton.disabled = true;
     thinkButton.querySelector('img').src = '/static/images/THINKclicked.png'; // 更換圖示表示正在處理
-    console.log('THINK Step 1: THINK 按鈕已禁用並更換圖示');
+    console.log('THINK Step 1: THINK button has been disabled and icon changed');
 
     // 移除輸入框中的訊息並新增到 context_window
     appendMessage('user', message, null);
-    console.log(`THINK Step 1: 使用者訊息 "${message}" 已新增到聊天窗口`);
+    console.log(`THINK Step 1: User message "${message}" has been added to the chat window`);
     messageInput.value = '';
 
     // 添加正在思考的樣式到輸入區域
     const inputArea = document.getElementById('input-area');
     inputArea.classList.add('thinking');
-    console.log('THINK Step 1: 已添加正在思考的樣式到輸入區域');
+    console.log('THINK Step 1: Added thinking style to input area');
 
     // 發送 POST 請求到 /api/think
-    console.log('THINK Step 2: 發送 POST 請求到 /api/think');
+    console.log('THINK Step 2: Sending POST request to /api/think');
     fetch('/api/think', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -203,28 +203,28 @@ function thinkHandler() {
     .then(response => response.json())
     .then(data => {
         // Step 3: 接收並處理合成的回應
-        console.log('THINK Step 3: 接收到合成的回應', data);
+        console.log('THINK Step 3: Received synthesized response', data);
         if (data.response) {
             appendMessage('bot', data.response, data.view_prompt, data.view_response);
-            console.log('THINK Step 3: 合成的回應已顯示在聊天窗口');
+            console.log('THINK Step 3: Synthesized response displayed in chat window');
         } else if (data.error) {
-            console.error('THINK Step 3: 後端回傳錯誤', data.error);
+            console.error('THINK Step 3: Backend returned an error', data.error);
             alert(data.error);
         }
     })
     .catch(error => {
-        console.error('THINK Step 3: 發生錯誤', error);
-        alert('抱歉，發生錯誤。');
+        console.error('THINK Step 3: An error occurred', error);
+        alert('Sorry, an error occurred.');
     })
     .finally(() => {
         // 恢復按鈕狀態
         thinkButton.disabled = false;
         thinkButton.querySelector('img').src = '/static/images/THINK.png'; // 恢復原圖示
-        console.log('THINK Step 3: 已恢復 THINK 按鈕狀態');
+        console.log('THINK Step 3: THINK button state restored');
 
         // 移除正在思考的樣式
         inputArea.classList.remove('thinking');
-        console.log('THINK Step 3: 已移除正在思考的樣式');
+        console.log('THINK Step 3: Removed thinking style');
     });
 }
 
@@ -244,11 +244,11 @@ async function sendMessageToAPI(message) {
             return data.response;
         } else {
             console.error('API Error:', data);
-            return '抱歉，無法獲取回應。';
+            return 'Sorry, unable to get a response.';
         }
     } catch (error) {
         console.error('Fetch Error:', error);
-        return '抱歉，發生錯誤。';
+        return 'Sorry, an error occurred.';
     }
 }
 
@@ -276,7 +276,7 @@ function sendMessage() {
                 result = String(eval(calcuText));
                 console.log(`計算結果: ${result}`);
             } catch (e) {
-                result = '計算錯誤';
+                result = 'Calculation error';
                 console.error('Eval error:', e);
             }
             appendMessage('bot', result, data.prompt);
@@ -288,7 +288,7 @@ function sendMessage() {
     })
     .catch(error => {
         console.error('Fetch error:', error);
-        appendMessage('bot', '抱歉，發生錯誤。', null);
+        appendMessage('bot', 'Sorry, an error occurred.', null);
     });
 }
 
@@ -600,7 +600,7 @@ function submitEdit(sender, messageDiv, newText) {
                         result = String(eval(calcuText));
                         console.log(`Calculated result: ${result}`);
                     } catch (e) {
-                        result = '計算錯誤';
+                        result = 'Calculation error';
                         console.error('Eval error:', e);
                     }
                     appendMessage('bot', result, data.prompt);
@@ -625,7 +625,7 @@ function submitEdit(sender, messageDiv, newText) {
     })
     .catch(error => {
         console.error('Fetch error:', error);
-        alert('抱歉，無法提交編輯。');
+        alert('Sorry, unable to submit the edit.');
         // 可以選擇恢復原始文字
         cancelEdit(sender, messageDiv);
     });
@@ -694,7 +694,7 @@ function redoMessage(sender, index, text) {
                     result = String(eval(calcuText));
                     console.log(`Calculated result: ${result}`);
                 } catch (e) {
-                    result = '計算錯誤';
+                    result = 'Calculation error';
                     console.error('Eval error:', e);
                 }
                 appendMessage('bot', result, data.prompt);
@@ -709,17 +709,13 @@ function redoMessage(sender, index, text) {
     })
     .catch(error => {
         console.error('Fetch error:', error);
-        alert('抱歉，無法重新生成回應。');
+        alert('Sorry, unable to regenerate the response.');
     });
 }
 
 // 處理 VIEW 按鈕點擊事件
 function handleViewButtonClick(response, prompt, spetext) {
     // 填充模態窗口內容
-    console.log('VIEW: 填充模態窗口內容');
-    console.log('VIEW: response:', response);
-    console.log('VIEW: prompt:', prompt);
-    console.log('VIEW: spetext:', spetext);
     if(spetext === null){
         document.getElementById('codeContent').textContent = prompt;
         document.getElementById('codeResult').textContent = response;
@@ -756,7 +752,7 @@ function clearConversation() {
     .then(data => {
         if(data.status === 'success'){
             chatWindow.innerHTML = '';
-            alert('對話已清除。');
+            alert('Conversation has been cleared.');
             messageIndex = 0; // 重置訊息索引
             console.log('清除對話並重置 messageIndex');
         }

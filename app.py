@@ -129,7 +129,7 @@ def chat():
 
         return jsonify({'response': generated_text, 'index': len(context_window)-1, 'prompt': prompt})
     else:
-        return jsonify({'response': '抱歉，我無法處理您的請求。', 'prompt': prompt}), 500
+         jsonify({'response': 'Sorry, I cannot process your request.', 'prompt': prompt}), 500
 
 # 新增 redo 路由
 @app.route('/api/redo', methods=['POST'])
@@ -214,7 +214,7 @@ def redo():
         new_bot_index = len(context_window) - 1
         return jsonify({'response': generated_text, 'index': new_bot_index, 'prompt': prompt})
     else:
-        return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
+        return jsonify({'response': 'Sorry, I cannot process your request.'}), 500
 
 # 新增 edit 路由
 @app.route('/api/edit', methods=['POST'])
@@ -285,7 +285,7 @@ def edit():
             new_bot_index = len(context_window) - 1
             return jsonify({'response': generated_text, 'index': new_bot_index, 'prompt': prompt})
         else:
-            return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
+            return jsonify({'response': 'Sorry, I cannot process your request.'}), 500
 
     elif sender == 'bot':
         # 確認該索引對應的訊息是 Bot 的訊息
@@ -320,16 +320,16 @@ def think():
     steps = []  # 用於存儲步驟資訊
 
     if not user_message:
-        steps.append('Step 1: 未提供訊息。')
+        steps.append('Step 1: No message provided.')
         return jsonify({'error': 'No message provided.', 'steps': steps}), 400
 
-    steps.append(f'Step 1: 接收到使用者訊息: "{user_message}"')
+    steps.append(f'Step 1: Received user message: "{user_message}"')
 
     # Step 1: 將訊息分成三個部分
     split_prompt = (
-        "請將以下訊息分成三個邏輯上獨立的部分，每部分用分號（;）隔開。\n"
-        f"訊息：{user_message}\n"
-        "分成三部分："
+        "Please split the following message into three logically independent parts, separated by semicolons (;).\n"
+        f"Message: {user_message}\n"
+        "Split into three parts:"
     )
 
     view_prompt += f"""1. : {split_prompt}\n"""
@@ -346,12 +346,12 @@ def think():
         'temperature': 0.5,
     }
 
-    steps.append('Step 2: 發送分割請求到 Cohere API')
+    steps.append('Step 2: Sending split request to Cohere API')
     split_response = requests.post(COHERE_API_URL, headers=headers, json=split_payload)
     view_response += f"""1. : {split_response.json()['generations'][0]['text'].strip()}\n"""
 
     if split_response.status_code != 200:
-        steps.append('Step 2: Cohere API 分割請求失敗。')
+        steps.append('Step 2: Cohere API split request failed.')
         return jsonify({'error': 'Failed to split message.', 'steps': steps}), 500
 
     split_text = split_response.json()['generations'][0]['text'].strip()
@@ -369,10 +369,10 @@ def think():
     view_prompt += f"""3. : {parts[1]}\n"""
     view_prompt += f"""4. : {parts[2]}\n"""
 
-    steps.append(f'Step 2: Cohere API 分割結果: {parts}')
+    steps.append(f'Step 2: Cohere API split result: {parts}')
 
     if len(parts) < 3:
-        steps.append('Step 2: 分割結果不足三部分。')
+        steps.append('Step 2: Split result does not contain three parts.')
         return jsonify({'error': 'Failed to split message into three parts.', 'steps': steps}), 500
 
     # Step 3: 同時發送三個請求到 /api/chat
@@ -380,16 +380,16 @@ def think():
         chat_payload = {
             'message': part
         }
-        steps.append(f'Step 3: 發送部分訊息到 /api/chat: "{part}"')
+        steps.append(f'Step 3: Sending part of the message to /api/chat: "{part}"')
         chat_response = requests.post('http://localhost:8888/api/chat', headers={'Content-Type': 'application/json'}, data=json.dumps(chat_payload))
         if chat_response.status_code == 200:
             chat_data = chat_response.json()
             response = chat_data.get('response', '')
-            steps.append(f'Step 3: 接收到 /api/chat 回應: "{response}"')
+            steps.append(f'Step 3: Received response from /api/chat: "{response}"')
             return response
         else:
-            steps.append(f'Step 3: /api/chat 回應錯誤: {chat_response.status_code}')
-            return '抱歉，無法處理這部分的請求。'
+            steps.append(f'Step 3: /api/chat response error: {chat_response.status_code}')
+            return 'Sorry, unable to process this part of the request.'
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(send_chat_request, part) for part in parts[:3]]
@@ -399,15 +399,15 @@ def think():
     view_response += f"""3. : {responses[1]}\n"""
     view_response += f"""4. : {responses[2]}\n"""
 
-    steps.append(f'Step 3: 三個部分的回應: {responses}')
+    steps.append(f'Step 3: Responses from the three parts: {responses}')
 
     # Step 4: 將三個回應合成一個最終答案
     synthesis_prompt = (
-        "請將以下三個回應合成一個連貫且全面的回答。\n"
-        f"回應1：{responses[0]}\n"
-        f"回應2：{responses[1]}\n"
-        f"回應3：{responses[2]}\n"
-        "合成的回答："
+        "Please synthesize the following three responses into one coherent and comprehensive answer.\n"
+        f"Response 1: {responses[0]}\n"
+        f"Response 2: {responses[1]}\n"
+        f"Response 3: {responses[2]}\n"
+        "Synthesized answer:"
     )
 
     view_prompt += f"""5. : {synthesis_prompt}\n"""
@@ -419,15 +419,15 @@ def think():
         'temperature': 0.7,
     }
 
-    steps.append('Step 4: 發送合成請求到 Cohere API')
+    steps.append('Step 4: Sending synthesis request to Cohere API')
     synthesis_response = requests.post(COHERE_API_URL, headers=headers, json=synthesis_payload)
 
     if synthesis_response.status_code != 200:
-        steps.append('Step 4: Cohere API 合成請求失敗。')
+        steps.append('Step 4: Cohere API synthesis request failed.')
         return jsonify({'error': 'Failed to synthesize responses.', 'steps': steps}), 500
 
     synthesized_text = synthesis_response.json()['generations'][0]['text'].strip()
-    steps.append(f'Step 4: 合成結果: "{synthesized_text}"')
+    steps.append(f'Step 4: Synthesis result: "{synthesized_text}"')
 
     # Step 5: 將原始訊息和合成的回答新增到 context_window
     if 'context_window' not in session:
@@ -442,7 +442,7 @@ def think():
         context_window = context_window[-MAX_CONTEXT * 2:]
     session['context_window'] = context_window
 
-    steps.append('Step 5: 新增使用者訊息和合成回應到 context_window')
+    steps.append('Step 5: Adding user message and synthesized response to context_window')
 
     view_response += f"""5. : {synthesized_text}\n"""
 
