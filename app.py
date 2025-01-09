@@ -351,6 +351,7 @@ def think():
     split_text = split_response.json()['generations'][0]['text'].strip()
     parts = [part.strip() for part in split_text.split(';') if part.strip()]
 
+    # 確保有至少三部分
     while len(parts) < 3:
         parts.append(parts[-1])
 
@@ -427,7 +428,13 @@ def think():
 
     steps.append('Step 5: 新增使用者訊息和合成回應到 context_window')
 
-    return jsonify({'response': synthesized_text, 'steps': steps, 'index': len(context_window)-1})
+    # 回傳 synthesized_text、steps、index 和 prompt
+    return jsonify({
+        'response': synthesized_text,
+        'steps': steps,
+        'index': len(context_window)-1,
+        'prompt': synthesis_prompt
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=8888)

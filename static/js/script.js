@@ -293,8 +293,8 @@ function sendMessage() {
 }
 
 // 添加訊息函數
-function appendMessage(sender, text, calcuText) {
-    // console.log(`Appending message: sender=${sender}, text="${text}", calcuText="${calcuText}"`);
+function appendMessage(sender, text, prompt) {
+    // console.log(`Appending message: sender=${sender}, text="${text}", prompt="${prompt}"`);
     
     const messageDiv = document.createElement('div');
     messageDiv.className = sender;
@@ -375,7 +375,7 @@ function appendMessage(sender, text, calcuText) {
             // 特別為 VIEW 按鈕添加點擊事件
             if (action.name === 'view' && sender === 'bot') {
                 button.addEventListener('click', () => {
-                    handleViewButtonClick(text, calcuText);
+                    handleViewButtonClick(text, prompt);
                 });
             }
 
@@ -449,6 +449,11 @@ function appendMessage(sender, text, calcuText) {
     // Append actionButtonsDiv after messageContentDiv if exists
     if (actionButtonsDiv) {
         messageDiv.appendChild(actionButtonsDiv);
+    }
+
+    // 如果有 prompt，儲存於 data-prompt 屬性
+    if (sender === 'bot' && prompt) {
+        messageDiv.setAttribute('data-prompt', prompt);
     }
 
     chatWindow.appendChild(messageDiv);
@@ -709,20 +714,14 @@ function redoMessage(sender, index, text) {
 }
 
 // 處理 VIEW 按鈕點擊事件
-function handleViewButtonClick(text, calcuText) {
-    if (calcuText) {
-        // 假設 eval() 是在這行執行的
-        const evalCode = `result = String(eval("${calcuText.trim()}"));`;
-        const evalResult = text;
-        document.getElementById('codeContent').textContent = evalCode;
-        document.getElementById('codeResult').textContent = evalResult;
+function handleViewButtonClick(response, prompt) {
+    // 填充模態窗口內容
+    document.getElementById('codeContent').textContent = prompt;
+    document.getElementById('codeResult').textContent = response;
 
-        // 顯示模態窗口
-        document.getElementById('codeModal').style.display = "block";
-        console.log('VIEW: 顯示模態窗口');
-    } else {
-        alert('這條訊息不是數學表達式，無法顯示代碼。');
-    }
+    // 顯示模態窗口
+    document.getElementById('codeModal').style.display = "block";
+    console.log('VIEW: 顯示模態窗口');
 }
 
 // 當用戶點擊 <span> (x)，關閉模態窗口
@@ -826,73 +825,3 @@ recognition.onresult = (event) => {
         messageInput.focus();
     }
 };
-
-// 為 THINK 按鈕添加事件監聽器
-if (thinkButton) {
-    thinkButton.addEventListener('click', thinkHandler);
-}
-
-// 定義 THINK 按鈕的處理函數
-function thinkHandler() {
-    const message = messageInput.value.trim();
-    if (message === '') {
-        alert('請輸入您的訊息後再使用 THINK 功能。');
-        return;
-    }
-
-    // Step 1: 發送訊息到 /api/think
-    // console.log('THINK Step 1: 發送訊息到 /api/think');
-
-    // 禁用按鈕以防止重複點擊
-    thinkButton.disabled = true;
-    thinkButton.querySelector('img').src = '/static/images/THINKclicked.png'; // 更換圖示表示正在處理
-    // console.log('THINK Step 1: THINK 按鈕已禁用並更換圖示');
-
-    // 移除輸入框中的訊息並新增到 context_window
-    appendMessage('user', message, null);
-    // console.log(`THINK Step 1: 使用者訊息 "${message}" 已新增到聊天窗口`);
-    messageInput.value = '';
-
-    // 添加正在思考的樣式到輸入區域
-    const inputArea = document.getElementById('input-area');
-    inputArea.classList.add('thinking');
-    // console.log('THINK Step 1: 已添加正在思考的樣式到輸入區域');
-
-    // 發送 POST 請求到 /api/think
-    // console.log('THINK Step 2: 發送 POST 請求到 /api/think');
-    fetch('/api/think', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Step 3: 接收並處理合成的回應
-        console.log('THINK Step 3: 接收到後端回應', data);
-        if (data.response) {
-            appendMessage('bot', data.response, null);
-        } else if (data.error) {
-            console.error('THINK Step 3: 後端回傳錯誤', data.error);
-            alert(data.error);
-        }
-
-        // Step 4: 依序顯示步驟資訊
-        if (data.steps && Array.isArray(data.steps)) {
-            data.steps.forEach(step => {
-                console.log(step);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('THINK Step 3: 發生錯誤', error);
-        alert('抱歉，發生錯誤。');
-    })
-    .finally(() => {
-        // 恢復按鈕狀態
-        thinkButton.disabled = false;
-        thinkButton.querySelector('img').src = '/static/images/THINK.png'; // 恢復原圖示
-
-        // 移除正在思考的樣式
-        inputArea.classList.remove('thinking');
-    });
-}

@@ -313,3 +313,20 @@ h1 {
     color: #2196F3;
     margin-top: 5px;
 }
+
+/* 新增模態窗口內容的樣式 */
+.modal-content .section {
+    margin-bottom: 15px;
+}
+
+.modal-content .section h3 {
+    margin-bottom: 5px;
+}
+
+#codeContent, #codeResult {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    white-space: pre-wrap; /* 保持換行 */
+}
