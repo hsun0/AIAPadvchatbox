@@ -313,15 +313,20 @@ def clear():
 def think():
     data = request.get_json()
     user_message = data.get('message')
+    
+    steps = []  # 用於存儲步驟資訊
 
     if not user_message:
-        return jsonify({'error': 'No message provided.'}), 400
+        steps.append('Step 1: 未提供訊息。')
+        return jsonify({'error': 'No message provided.', 'steps': steps}), 400
+
+    steps.append(f'Step 1: 接收到使用者訊息: "{user_message}"')
 
     # Step 1: 將訊息分成三個部分
     split_prompt = (
-        "Please split the following message into three parts, do not answer the question, separate each part with a semicolon (;).\n"
-        f"Message: {user_message}\n"
-        "Split into three parts:"
+        "請將以下訊息分成三個邏輯上獨立的部分，每部分用分號（;）隔開。\n"
+        f"訊息：{user_message}\n"
+        "分成三部分："
     )
 
     headers = {
@@ -330,16 +335,18 @@ def think():
     }
 
     split_payload = {
-        'model': 'command-r-plus-08-2024',  # 請根據您的模型選擇
+        'model': 'command-xlarge-nightly',  # 請根據您的模型選擇
         'prompt': split_prompt,
         'max_tokens': 100,
         'temperature': 0.5,
     }
 
+    steps.append('Step 2: 發送分割請求到 Cohere API')
     split_response = requests.post(COHERE_API_URL, headers=headers, json=split_payload)
 
     if split_response.status_code != 200:
-        return jsonify({'error': 'Failed to split message.'}), 500
+        steps.append('Step 2: Cohere API 分割請求失敗。')
+        return jsonify({'error': 'Failed to split message.', 'steps': steps}), 500
 
     split_text = split_response.json()['generations'][0]['text'].strip()
     parts = [part.strip() for part in split_text.split(';') if part.strip()]
@@ -351,23 +358,35 @@ def think():
         if len(parts[i]) < 4:
             parts[i] = user_message
 
-    # Step 2: 使用 ThreadPoolExecutor 同時發送三個請求到 /api/chat
+    steps.append(f'Step 2: Cohere API 分割結果: {parts}')
+
+    if len(parts) < 3:
+        steps.append('Step 2: 分割結果不足三部分。')
+        return jsonify({'error': 'Failed to split message into three parts.', 'steps': steps}), 500
+
+    # Step 3: 同時發送三個請求到 /api/chat
     def send_chat_request(part):
         chat_payload = {
             'message': part
         }
+        steps.append(f'Step 3: 發送部分訊息到 /api/chat: "{part}"')
         chat_response = requests.post('http://localhost:8888/api/chat', headers={'Content-Type': 'application/json'}, data=json.dumps(chat_payload))
         if chat_response.status_code == 200:
             chat_data = chat_response.json()
-            return chat_data.get('response', '')
+            response = chat_data.get('response', '')
+            steps.append(f'Step 3: 接收到 /api/chat 回應: "{response}"')
+            return response
         else:
+            steps.append(f'Step 3: /api/chat 回應錯誤: {chat_response.status_code}')
             return '抱歉，無法處理這部分的請求。'
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(send_chat_request, part) for part in parts[:3]]
         responses = [future.result() for future in concurrent.futures.as_completed(futures)]
 
-    # Step 3: 將三個回應合成一個最終答案
+    steps.append(f'Step 3: 三個部分的回應: {responses}')
+
+    # Step 4: 將三個回應合成一個最終答案
     synthesis_prompt = (
         "請將以下三個回應合成一個連貫且全面的回答。\n"
         f"回應1：{responses[0]}\n"
@@ -377,20 +396,23 @@ def think():
     )
 
     synthesis_payload = {
-        'model': 'command-r-plus-08-2024',  # 請根據您的模型選擇
+        'model': 'command-xlarge-nightly',  # 請根據您的模型選擇
         'prompt': synthesis_prompt,
         'max_tokens': 150,
         'temperature': 0.7,
     }
 
+    steps.append('Step 4: 發送合成請求到 Cohere API')
     synthesis_response = requests.post(COHERE_API_URL, headers=headers, json=synthesis_payload)
 
     if synthesis_response.status_code != 200:
-        return jsonify({'error': 'Failed to synthesize responses.'}), 500
+        steps.append('Step 4: Cohere API 合成請求失敗。')
+        return jsonify({'error': 'Failed to synthesize responses.', 'steps': steps}), 500
 
     synthesized_text = synthesis_response.json()['generations'][0]['text'].strip()
+    steps.append(f'Step 4: 合成結果: "{synthesized_text}"')
 
-    # Step 4: 將原始訊息和合成的回答新增到 context_window
+    # Step 5: 將原始訊息和合成的回答新增到 context_window
     if 'context_window' not in session:
         session['context_window'] = []
 
@@ -403,7 +425,9 @@ def think():
         context_window = context_window[-MAX_CONTEXT * 2:]
     session['context_window'] = context_window
 
-    return jsonify({'response': synthesized_text, 'index': len(context_window)-1})
+    steps.append('Step 5: 新增使用者訊息和合成回應到 context_window')
+
+    return jsonify({'response': synthesized_text, 'steps': steps, 'index': len(context_window)-1})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8888)
