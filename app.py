@@ -313,6 +313,9 @@ def clear():
 def think():
     data = request.get_json()
     user_message = data.get('message')
+
+    view_prompt = ""
+    view_response = ""
     
     steps = []  # 用於存儲步驟資訊
 
@@ -329,6 +332,8 @@ def think():
         "分成三部分："
     )
 
+    view_prompt += f"""1. : {split_prompt}\n"""
+
     headers = {
         'Authorization': f'Bearer {COHERE_API_KEY}',
         'Content-Type': 'application/json',
@@ -343,6 +348,7 @@ def think():
 
     steps.append('Step 2: 發送分割請求到 Cohere API')
     split_response = requests.post(COHERE_API_URL, headers=headers, json=split_payload)
+    view_response += f"""1. : {split_response.json()['generations'][0]['text'].strip()}\n"""
 
     if split_response.status_code != 200:
         steps.append('Step 2: Cohere API 分割請求失敗。')
@@ -358,6 +364,10 @@ def think():
     for i in range(3):
         if len(parts[i]) < 4:
             parts[i] = user_message
+    
+    view_prompt += f"""2. : {parts[0]}\n"""
+    view_prompt += f"""3. : {parts[1]}\n"""
+    view_prompt += f"""4. : {parts[2]}\n"""
 
     steps.append(f'Step 2: Cohere API 分割結果: {parts}')
 
@@ -385,6 +395,10 @@ def think():
         futures = [executor.submit(send_chat_request, part) for part in parts[:3]]
         responses = [future.result() for future in concurrent.futures.as_completed(futures)]
 
+    view_response += f"""2. : {responses[0]}\n"""
+    view_response += f"""3. : {responses[1]}\n"""
+    view_response += f"""4. : {responses[2]}\n"""
+
     steps.append(f'Step 3: 三個部分的回應: {responses}')
 
     # Step 4: 將三個回應合成一個最終答案
@@ -395,6 +409,8 @@ def think():
         f"回應3：{responses[2]}\n"
         "合成的回答："
     )
+
+    view_prompt += f"""5. : {synthesis_prompt}\n"""
 
     synthesis_payload = {
         'model': 'command-xlarge-nightly',  # 請根據您的模型選擇
@@ -428,12 +444,17 @@ def think():
 
     steps.append('Step 5: 新增使用者訊息和合成回應到 context_window')
 
+    view_response += f"""5. : {synthesized_text}\n"""
+
     # 回傳 synthesized_text、steps、index 和 prompt
+    print("synthesized_text:", synthesized_text)
     return jsonify({
         'response': synthesized_text,
         'steps': steps,
         'index': len(context_window)-1,
-        'prompt': synthesis_prompt
+        'prompt': synthesis_prompt,
+        "view_prompt": view_prompt,
+        "view_response": view_response
     })
 
 if __name__ == '__main__':

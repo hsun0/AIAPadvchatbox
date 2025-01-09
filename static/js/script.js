@@ -205,7 +205,7 @@ function thinkHandler() {
         // Step 3: 接收並處理合成的回應
         console.log('THINK Step 3: 接收到合成的回應', data);
         if (data.response) {
-            appendMessage('bot', data.response, null);
+            appendMessage('bot', data.response, data.view_prompt, data.view_response);
             console.log('THINK Step 3: 合成的回應已顯示在聊天窗口');
         } else if (data.error) {
             console.error('THINK Step 3: 後端回傳錯誤', data.error);
@@ -293,7 +293,7 @@ function sendMessage() {
 }
 
 // 添加訊息函數
-function appendMessage(sender, text, prompt) {
+function appendMessage(sender, text, prompt, spetext = null) {
     // console.log(`Appending message: sender=${sender}, text="${text}", prompt="${prompt}"`);
     
     const messageDiv = document.createElement('div');
@@ -375,7 +375,7 @@ function appendMessage(sender, text, prompt) {
             // 特別為 VIEW 按鈕添加點擊事件
             if (action.name === 'view' && sender === 'bot') {
                 button.addEventListener('click', () => {
-                    handleViewButtonClick(text, prompt);
+                    handleViewButtonClick(text, prompt, spetext);
                 });
             }
 
@@ -714,10 +714,19 @@ function redoMessage(sender, index, text) {
 }
 
 // 處理 VIEW 按鈕點擊事件
-function handleViewButtonClick(response, prompt) {
+function handleViewButtonClick(response, prompt, spetext) {
     // 填充模態窗口內容
-    document.getElementById('codeContent').textContent = prompt;
-    document.getElementById('codeResult').textContent = response;
+    console.log('VIEW: 填充模態窗口內容');
+    console.log('VIEW: response:', response);
+    console.log('VIEW: prompt:', prompt);
+    console.log('VIEW: spetext:', spetext);
+    if(spetext === null){
+        document.getElementById('codeContent').textContent = prompt;
+        document.getElementById('codeResult').textContent = response;
+    }else{
+        document.getElementById('codeContent').textContent = prompt;
+        document.getElementById('codeResult').textContent = spetext;
+    }
 
     // 顯示模態窗口
     document.getElementById('codeModal').style.display = "block";
