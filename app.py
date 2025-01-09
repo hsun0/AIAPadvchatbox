@@ -127,9 +127,9 @@ def chat():
         else:
             session['context_window'] = context_window
 
-        return jsonify({'response': generated_text, 'index': len(context_window)-1})
+        return jsonify({'response': generated_text, 'index': len(context_window)-1, 'prompt': prompt})
     else:
-        return jsonify({'response': '抱歉，我無法處理您的請求。'}), 500
+        return jsonify({'response': '抱歉，我無法處理您的請求。', 'prompt': prompt}), 500
 
 # 新增 redo 路由
 @app.route('/api/redo', methods=['POST'])

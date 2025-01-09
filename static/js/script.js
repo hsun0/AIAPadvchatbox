@@ -279,10 +279,10 @@ function sendMessage() {
                 result = '計算錯誤';
                 console.error('Eval error:', e);
             }
-            appendMessage('bot', result, calcuText);
+            appendMessage('bot', result, data.prompt);
             console.log('機器人回應已顯示');
         } else {
-            appendMessage('bot', data.response, null);
+            appendMessage('bot', data.response, data.prompt);
             console.log('機器人回應已顯示');
         }
     })
